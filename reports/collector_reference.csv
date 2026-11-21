@@ -1,0 +1,4 @@
+source,episodes,success_rate,collision_rate,timeout_rate,return_mean,successful_steps_mean
+final,100,0.62,0.19,0.19,0.31155859375,54.33870967741935
+early,100,0.0,1.0,0.0,-1.0,
+random,100,0.0,1.0,0.0,-1.0,

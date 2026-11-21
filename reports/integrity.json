@@ -1,0 +1,21 @@
+{
+  "requirements_source": "docs/Presentation.pdf",
+  "proposal_sha256": "ce093a723fa6815196e46236848aebf853d5c25f771d80a3461ba381aebbf0ed",
+  "final_dataset_target": 200000,
+  "datasets_verified": 2,
+  "complete_collection_episodes_verified": 5803,
+  "raw_elapsed_counters_verified": true,
+  "checkpoints_verified": 18,
+  "evaluation_episodes_verified": 1800,
+  "reference_episodes_verified": 300,
+  "shared_test_seeds_verified": 100,
+  "gif_replays_verified": 7,
+  "mp4_replays_verified": 7,
+  "all_five_metrics_verified": true,
+  "sample_sd_verified": true,
+  "pilot_50k_hashes_unchanged": true,
+  "source_revision": "40628a24137cc5c10f8ab7d5f51d14f14d9753fe",
+  "source_files_verified": 13,
+  "results_sha256": "8ebc42210a8b979baab8ba2fa44ff369119d702461cfc2f2ed20cbcbd81644ba",
+  "renderer_verified": true
+}
