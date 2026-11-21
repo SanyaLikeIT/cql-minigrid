@@ -26,7 +26,7 @@ training-seed variation, rather than uncertainty over pooled episodes.
 | mixed | CQL | 62.0 ± 4.0 | 16.3 ± 0.6 | 0.332 ± 0.042 |
 | mixed | BC | 57.7 ± 10.1 | 21.0 ± 1.0 | 0.256 ± 0.075 |
 
-![Success, collision, and return by method and dataset](reports/metrics.png)
+![Success, collision, and return by method and dataset](reports/pilot-50k/metrics.png)
 
 CQL has the highest mean success and return on both files. Its success
 advantage over BC is 3.7 percentage points on `strong` and 4.3 on `mixed`,
@@ -46,9 +46,9 @@ same 100 held-out seeds. Early PPO and random each had 0% success and 100%
 collision. These collector references use one checkpoint each and have no
 training-seed error bars.
 
-[Per-run CSV](reports/per_run.csv), [full compact report](reports/summary.json),
-and [hardware/build details](reports/runtime.json) retain the measured values.
-[The artifact audit](reports/integrity.json) verified both datasets, all 18
+[Per-run CSV](reports/pilot-50k/per_run.csv), [full compact report](reports/pilot-50k/summary.json),
+and [hardware/build details](reports/pilot-50k/runtime.json) retain the measured values.
+[The artifact audit](reports/pilot-50k/integrity.json) verified both datasets, all 18
 checkpoints, 1,800 evaluation episodes, and six replays.
 Timeout rates and steps on successful episodes are included in the JSON/CSV.
 
@@ -98,19 +98,19 @@ Before collection, final PPO reached 41/64 validation successes (64.06%);
 early PPO and random each reached 0/64. Collection requires at least 60%
 validation success for the final source.
 
-| Frozen file | Transitions | Episodes | Episode success | Episode collision | Episode timeout | Mean return |
+| Retained pilot file | Transitions | Episodes | Episode success | Episode collision | Episode timeout | Mean return |
 |---|---:|---:|---:|---:|---:|---:|
 | strong | 50,058 | 488 | 62.9% | 21.5% | 15.6% | 0.251 |
 | mixed | 50,209 | 954 | 31.6% | 60.5% | 8.0% | -0.369 |
 
 `mixed` chooses sources per episode with probabilities 0.50 final PPO,
-0.25 early PPO, and 0.25 random. Actual episode counts are 462 / 240 / 252;
+0.25 early PPO, and 0.25 random. The pilot episode counts are 462 / 240 / 252;
 actual transition counts are 47,163 / 958 / 2,088. These proportions differ
 because PPO episodes are longer. These files are pilot datasets. The [project proposal](docs/Presentation.pdf)
 sets approximately 200,000 transitions per final dataset.
 The final complete episode can exceed the target by up to 255 transitions.
 
-![Episode and transition source composition](reports/dataset_sources.png)
+![Episode and transition source composition](reports/pilot-50k/dataset_sources.png)
 
 NPZ files store observation, action, reward, next observation, both ending
 flags, episode ID, source, environment seed, and policy seed. JSON metadata
@@ -118,29 +118,37 @@ records source checkpoints/hashes, actual counts, per-source outcomes, and
 every episode's provenance. Collection resumes at complete-episode shard
 boundaries and rejects changed sources or configuration.
 
+The final configuration targets 200,000 transitions per dataset. Final files
+and runs live under `artifacts/final/`; the 50,000-transition pilot remains
+unchanged under `artifacts/main/`, with compact reports in
+`reports/pilot-50k/`. `configs/pilot_50k.json` retains its collection budget.
+The separate small CPU pilot remains in `configs/smoke.json`.
+New transitions store `elapsed_steps` and `next_elapsed_steps` as int32;
+loading old pilot files derives these counters without rewriting them.
+
 ## Reproduce
 
 Run the entire main pipeline, including collector training if absent:
 
 ```sh
-.venv/bin/python -m cql_minigrid pipeline --config configs/main.json --root artifacts/main --workers 3 --reports reports
+.venv/bin/python -m cql_minigrid pipeline --config configs/main.json --root artifacts/final --workers 1 --reports reports
 ```
 
 Or run each phase explicitly:
 
 ```sh
-.venv/bin/python -m cql_minigrid ppo --config configs/main.json --root artifacts/main
-.venv/bin/python -m cql_minigrid collect --config configs/main.json --root artifacts/main
-.venv/bin/python -m cql_minigrid train --method dqn --dataset artifacts/main/datasets/strong.npz --seed 0
-.venv/bin/python -m cql_minigrid train --method cql --dataset artifacts/main/datasets/strong.npz --seed 0
-.venv/bin/python -m cql_minigrid train --method bc --dataset artifacts/main/datasets/strong.npz --seed 0
-.venv/bin/python -m cql_minigrid experiments --config configs/main.json --root artifacts/main --workers 3 --reports reports
-.venv/bin/python -m cql_minigrid evaluate --method cql --checkpoint artifacts/main/runs/strong/cql/seed-0.pt --output artifacts/main/evaluation/strong-cql-0.json
-.venv/bin/python -m cql_minigrid replay --method cql --checkpoint artifacts/main/runs/strong/cql/seed-0.pt --output artifacts/main/replays/strong-cql-0.gif
+.venv/bin/python -m cql_minigrid ppo --config configs/main.json --root artifacts/final
+.venv/bin/python -m cql_minigrid collect --config configs/main.json --root artifacts/final
+.venv/bin/python -m cql_minigrid train --method dqn --dataset artifacts/final/datasets/strong.npz --seed 0
+.venv/bin/python -m cql_minigrid train --method cql --dataset artifacts/final/datasets/strong.npz --seed 0
+.venv/bin/python -m cql_minigrid train --method bc --dataset artifacts/final/datasets/strong.npz --seed 0
+.venv/bin/python -m cql_minigrid experiments --config configs/main.json --root artifacts/final --workers 1 --reports reports
+.venv/bin/python -m cql_minigrid evaluate --method cql --checkpoint artifacts/final/runs/strong/cql/seed-0.pt --output artifacts/final/evaluation/strong-cql-0.json
+.venv/bin/python -m cql_minigrid replay --method cql --checkpoint artifacts/final/runs/strong/cql/seed-0.pt --output artifacts/final/replays/strong-cql-0.gif
 ```
 
 The `experiments` command completes/resumes all 18 runs from existing
-frozen datasets. Three workers run independently with one CPU thread each.
+frozen datasets. The final matrix runs one CPU worker with one thread to bound memory use.
 For manual training, repeat the commands with seeds 1 and 2 and the mixed
 file, or let `experiments` handle the matrix. Add `--resume` when manually
 continuing a PPO or offline training command. `--method ppo` evaluates the
@@ -169,14 +177,14 @@ equivalent to uninterrupted collection-policy training.
 ## Pilot, checks, and artifacts
 
 ```sh
-.venv/bin/python -m cql_minigrid pipeline --config configs/smoke.json --root artifacts/full-pilot --reports artifacts/full-pilot/reports
+.venv/bin/python -m cql_minigrid pipeline --config configs/smoke.json --root artifacts/proposal-smoke --reports artifacts/proposal-smoke/reports
 ```
 
 The measured full CPU pilot took 7.23 seconds (six small runs). A three-worker
 resume took 5.87 seconds and kept all six checkpoints and metric summaries
 unchanged. The representative 100-update DQN pilot took 0.31 seconds for
 updates, 1.52 seconds including dataset/model setup; it continued into the
-main seed-0 run. Final PPO's timer recorded 111.28 seconds; the main matrix
+main seed-0 run. Final PPO's timer recorded 111.28 seconds; the 50,000-transition pilot matrix
 recorded 130.62 seconds with three workers, including evaluation and replay
 export. Imports/setup outside each timer are excluded.
 
@@ -188,17 +196,17 @@ locally; GitHub Actions uses `configs/smoke.json`.
 
 | Local path | Contents |
 |---|---|
-| `artifacts/main/datasets/` | Frozen NPZ/JSON files and resumable shards |
-| `artifacts/main/ppo/` | Early/latest/final PPO checkpoints and learning history |
-| `artifacts/main/runs/{dataset}/{method}/seed-{seed}.pt` | Offline checkpoints |
-| `artifacts/main/runs/` | Per-run training and 100-episode evaluation JSON |
-| `artifacts/main/replays/` | Replay GIFs and episode metadata |
-| `artifacts/main/results.json` | Complete matrix summaries and experiment provenance |
-| `artifacts/main/*.log` | Main PPO, collection, and experiment logs |
+| `artifacts/final/datasets/` | Frozen NPZ/JSON files and resumable shards |
+| `artifacts/final/ppo/` | Early/latest/final PPO checkpoints and learning history |
+| `artifacts/final/runs/{dataset}/{method}/seed-{seed}.pt` | Offline checkpoints |
+| `artifacts/final/runs/` | Per-run training and 100-episode evaluation JSON |
+| `artifacts/final/replays/` | Replay GIFs and episode metadata |
+| `artifacts/final/results.json` | Complete matrix summaries and experiment provenance |
+| `artifacts/final/*.log` | Main PPO, collection, and experiment logs |
 | `artifacts/full-pilot/`, `artifacts/pilots/` | Pilot timings and failed collector diagnostics |
 | `reports/` | Compact tracked tables, plots, runtime details, and demonstrations |
 
-Dataset SHA-256 values:
+Retained pilot dataset SHA-256 values:
 
 ```text
 strong 9996626ec7abf42ca1be736f9e96e9917fc81fb40748a76d95e8e261c8fcbc11
@@ -217,7 +225,7 @@ Subsampled playback lasts about ten seconds or less.
 
 | Dataset | DQN | CQL | BC |
 |---|---|---|---|
-| strong | [collision](reports/demos/strong-dqn.gif) | [collision](reports/demos/strong-cql.gif) | [collision](reports/demos/strong-bc.gif) |
-| mixed | [collision](reports/demos/mixed-dqn.gif) | [success](reports/demos/mixed-cql.gif) | [success](reports/demos/mixed-bc.gif) |
+| strong | [collision](reports/pilot-50k/demos/strong-dqn.gif) | [collision](reports/pilot-50k/demos/strong-cql.gif) | [collision](reports/pilot-50k/demos/strong-bc.gif) |
+| mixed | [collision](reports/pilot-50k/demos/mixed-dqn.gif) | [success](reports/pilot-50k/demos/mixed-cql.gif) | [success](reports/pilot-50k/demos/mixed-bc.gif) |
 
-![CQL on mixed data, evaluation seed 20000](reports/demos/mixed-cql.gif)
+![CQL on mixed data, evaluation seed 20000](reports/pilot-50k/demos/mixed-cql.gif)

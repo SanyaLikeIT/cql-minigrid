@@ -1,0 +1,68 @@
+{
+  "seconds": 144.73857739099913,
+  "target_per_dataset": 200000,
+  "datasets": {
+    "strong": {
+      "transitions": 200035,
+      "episodes": 2018,
+      "sha256": "b389e8b5f08e24d4a7d2a4000d0c6a6a9955b92fef54cc111752df0c93e42f42",
+      "sources": {
+        "strong": {
+          "episodes": 2018,
+          "success_rate": 0.6511397423191279,
+          "collision_rate": 0.19970267591674926,
+          "timeout_rate": 0.1491575817641229,
+          "return_mean": 0.28804586843409313,
+          "successful_steps_mean": 71.37595129375951,
+          "transitions": 200035
+        }
+      }
+    },
+    "mixed": {
+      "transitions": 200019,
+      "episodes": 3785,
+      "sha256": "fe406cc563231614bf9546e585c462b3203050b4f1c2c1ec7f937deedde7e62e",
+      "sources": {
+        "strong": {
+          "episodes": 1848,
+          "success_rate": 0.6498917748917749,
+          "collision_rate": 0.18722943722943722,
+          "timeout_rate": 0.16287878787878787,
+          "return_mean": 0.29775897930194806,
+          "successful_steps_mean": 72.17485428809326,
+          "transitions": 187604
+        },
+        "early": {
+          "episodes": 984,
+          "success_rate": 0.0,
+          "collision_rate": 1.0,
+          "timeout_rate": 0.0,
+          "return_mean": -1.0,
+          "successful_steps_mean": null,
+          "transitions": 4085
+        },
+        "random": {
+          "episodes": 953,
+          "success_rate": 0.002098635886673662,
+          "collision_rate": 0.9979013641133263,
+          "timeout_rate": 0.0,
+          "return_mean": -0.9961199829485834,
+          "successful_steps_mean": 43.0,
+          "transitions": 8330
+        }
+      }
+    }
+  },
+  "collector_source_sha256": "bbc51bb95680dc1595c528b536d632c6eb25215e87583ffc396f9454e562cbbb",
+  "proposal_sha256": "ce093a723fa6815196e46236848aebf853d5c25f771d80a3461ba381aebbf0ed",
+  "final_root": "artifacts/final",
+  "pilot_root": "artifacts/main",
+  "pilot_config": "configs/pilot_50k.json",
+  "checks": {
+    "datasets_loaded": 2,
+    "complete_episodes": 5803,
+    "raw_time_dtype": "int32",
+    "counter_consistency": true,
+    "pilot_files_preserved": true
+  }
+}
