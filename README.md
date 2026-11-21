@@ -93,3 +93,16 @@ Use `--method bc` for behavioral cloning. Its two-layer classifier predicts
 the recorded action with cross-entropy and uses no rewards, next states,
 or TD targets in its updates. It has the same observation interface,
 5,000-update budget, checkpoint/resume behavior, and argmax policy adapter.
+
+Evaluate a saved policy on all 100 reserved seeds and export a replay:
+
+```sh
+.venv/bin/python -m cql_minigrid evaluate --method cql --checkpoint artifacts/main/runs/strong/cql/seed-0.pt --output artifacts/main/evaluation/strong-cql-0.json
+.venv/bin/python -m cql_minigrid replay --method cql --checkpoint artifacts/main/runs/strong/cql/seed-0.pt --output artifacts/main/replays/strong-cql-0.gif
+```
+
+`--method ppo` evaluates the collector; `--method random` needs no checkpoint.
+Episode reports store seeds, outcomes, both ending flags, return, and steps.
+All methods use the exact same evaluation seed list. Replays show the first
+reserved seed; frame subsampling limits playback to about ten seconds,
+with the full episode length and stride retained in the GIF's JSON file.

@@ -139,6 +139,8 @@ def train_offline(dataset, output, config, *, method='dqn', seed=0, resume=False
 class NetworkPolicy:
     def __init__(self, checkpoint):
         saved = torch.load(checkpoint, map_location='cpu', weights_only=False)
+        self.identity = saved['identity']
+        self.updates = saved['updates']
         self.model = ActionNetwork(saved['observation']['shape'][0], saved['identity']['config']['hidden'])
         self.model.load_state_dict(saved['model'])
         self.model.eval()

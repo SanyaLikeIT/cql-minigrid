@@ -6,15 +6,16 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description="Team 12 offline MiniGrid experiments")
-    parser.add_argument("command", choices=["doctor", "env-smoke", "ppo", "collect", "train"])
+    parser.add_argument("command", choices=["doctor", "env-smoke", "ppo", "collect", "train", "evaluate", "replay"])
     parser.add_argument("--config", default="configs/main.json")
     parser.add_argument("--root", default="artifacts/main")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--transitions", type=int)
     parser.add_argument("--dataset")
-    parser.add_argument("--method", choices=["dqn", "cql", "bc"], default="dqn")
+    parser.add_argument("--method", choices=["dqn", "cql", "bc", "ppo", "random"], default="dqn")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output")
+    parser.add_argument("--checkpoint")
     args = parser.parse_args()
     if args.command == "doctor":
         import gymnasium
@@ -57,3 +58,20 @@ def main():
         dataset = Path(args.dataset) if args.dataset else Path(args.root) / "datasets/strong.npz"
         output = Path(args.output) if args.output else Path(args.root) / "runs" / dataset.stem / args.method / f"seed-{args.seed}.pt"
         train_offline(dataset, output, config["offline"], method=args.method, seed=args.seed, resume=args.resume)
+    elif args.command in ["evaluate", "replay"]:
+        from .evaluation import evaluate, export_gif, load_policy
+        from .common import seed_everything
+        seed_everything(0)
+        config = json.loads(Path(args.config).read_text())
+        seeds = json.loads(Path(config["seeds_file"]).read_text())["evaluation"]
+        checkpoint = args.checkpoint
+        if checkpoint is None and args.method != "random":
+            checkpoint = Path(args.root) / "ppo/final.zip" if args.method == "ppo" else Path(args.root) / "runs/strong" / args.method / f"seed-{args.seed}.pt"
+        if args.command == "evaluate":
+            output = args.output or Path(args.root) / "evaluation" / f"{args.method}-seed-{args.seed}.json"
+            report = evaluate(args.method, checkpoint, seeds, output)
+            print(json.dumps(report["summary"], indent=2))
+        else:
+            output = args.output or Path(args.root) / "replays" / f"{args.method}-seed-{args.seed}.gif"
+            policy, _ = load_policy(args.method, checkpoint)
+            print(json.dumps(export_gif(policy, output, seeds[0]), indent=2))

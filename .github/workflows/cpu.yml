@@ -28,3 +28,5 @@ jobs:
       - run: python -m cql_minigrid train --config configs/smoke.json --root artifacts/ci --method dqn
       - run: python -m cql_minigrid train --config configs/smoke.json --root artifacts/ci --method cql
       - run: python -m cql_minigrid train --config configs/smoke.json --root artifacts/ci --method bc
+      - run: python -m cql_minigrid evaluate --config configs/smoke.json --root artifacts/ci --method cql
+      - run: python -m cql_minigrid replay --config configs/smoke.json --root artifacts/ci --method cql
