@@ -1,0 +1,26 @@
+{
+  "seeds_file": "configs/smoke_seeds.json",
+  "ppo": {
+    "seed": 12,
+    "total_timesteps": 256,
+    "early_timesteps": 64,
+    "checkpoint_interval": 128,
+    "n_envs": 2,
+    "n_steps": 32,
+    "batch_size": 64,
+    "n_epochs": 1,
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "ent_coef": 0.01,
+    "shaping_scale": 0.0,
+    "step_cost": 0.0
+  },
+  "datasets": {
+    "transitions": 64,
+    "minimum_collector_success": 0.0,
+    "mixtures": {
+      "strong": {"strong": 1.0},
+      "mixed": {"strong": 0.5, "early": 0.25, "random": 0.25}
+    }
+  }
+}

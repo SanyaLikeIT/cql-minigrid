@@ -23,3 +23,5 @@ jobs:
       - run: python -m pytest -q
       - run: python -m cql_minigrid doctor
       - run: python -m cql_minigrid env-smoke
+      - run: python -m cql_minigrid ppo --config configs/smoke.json --root artifacts/ci
+      - run: python -m cql_minigrid collect --config configs/smoke.json --root artifacts/ci

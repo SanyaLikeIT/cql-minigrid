@@ -49,10 +49,8 @@ def make_env(*, max_steps=256, render_mode=None, **kwargs):
 
 
 def observation_spec():
-    env = make_env()
     result = {'env_id': ENV_ID, 'version': OBSERVATION_VERSION,
-              'shape': list(env.observation_space.shape), 'max_steps': 256,
+              'shape': [8 * 8 * (len(OBJECT_TO_IDX) + 2) + 5], 'max_steps': 256,
               'actions': ['left', 'right', 'forward'],
               'encoding': 'object one-hot, color/5, state/3, direction one-hot, elapsed/max_steps'}
-    env.close()
     return result
