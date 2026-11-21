@@ -11,8 +11,9 @@
     "n_epochs": 4,
     "learning_rate": 0.0003,
     "gamma": 0.99,
-    "ent_coef": 0.01,
-    "shaping_scale": 0.5
+    "ent_coef": 0.03,
+    "shaping_scale": 0.2,
+    "step_cost": 0.005
   },
   "datasets": {
     "transitions": 50000,

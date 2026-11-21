@@ -12,7 +12,8 @@
     "learning_rate": 0.0003,
     "gamma": 0.99,
     "ent_coef": 0.01,
-    "shaping_scale": 0.0
+    "shaping_scale": 0.0,
+    "step_cost": 0.0
   },
   "datasets": {
     "transitions": 64,

@@ -34,7 +34,7 @@ def train_ppo(config, root, *, resume=False):
     if not resume and (root / "latest.zip").exists():
         raise FileExistsError("PPO output exists; use --resume or another output directory")
     env = DummyVecEnv([lambda: Monitor(CollectorReward(make_env(),
-        scale=config["shaping_scale"], gamma=config["gamma"])) for _ in range(config["n_envs"])])
+        scale=config["shaping_scale"], step_cost=config["step_cost"])) for _ in range(config["n_envs"])])
     env.seed(config["seed"])
     if previous:
         model = PPO.load(root / "latest.zip", env=env, device="cpu")

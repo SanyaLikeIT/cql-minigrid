@@ -53,13 +53,13 @@ random. Actual episode and transition counts and source outcomes are stored
 in the dataset JSON files. Validation source audits precede collection;
 final PPO must reach at least 60% validation success to be labeled strong.
 
-PPO alone uses potential shaping: `r + 0.5 * (gamma * Phi(next) - Phi(now))`,
-where Phi is negative normalized Manhattan distance to the goal and is zero
-at either episode ending. Its finite-horizon time limit is terminal for
-the PPO value target. Source audits, saved transitions, and final evaluation
-use the original rewards and both ending flags. An initial unshaped PPO
-pilot reached 0/64 validation successes after 401,408 steps; its local logs
-are retained under `artifacts/pilots/unshaped/`.
+PPO alone uses distance rewards:
+`r + 0.2 * (Manhattan_distance_before - Manhattan_distance_after) - 0.005`.
+Its finite-horizon time limit is terminal for the PPO value target.
+Source audits, saved transitions, and final evaluation use the original
+rewards and both ending flags. Unshaped and potential-only PPO pilots each
+reached 0/64 validation successes after 401,408 steps; their local logs are
+retained under `artifacts/pilots/unshaped/` and `artifacts/pilots/potential-only/`.
 
 For a small CPU collector pilot, use `configs/smoke.json` and a separate
 `--root artifacts/smoke`. This pilot disables the collector quality gate.
