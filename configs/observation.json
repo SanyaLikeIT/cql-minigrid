@@ -1,0 +1,14 @@
+{
+  "env_id": "MiniGrid-Dynamic-Obstacles-8x8-v0",
+  "version": "full-symbolic-direction-time-v1",
+  "shape": [
+    837
+  ],
+  "max_steps": 256,
+  "actions": [
+    "left",
+    "right",
+    "forward"
+  ],
+  "encoding": "object one-hot, color/5, state/3, direction one-hot, elapsed/max_steps"
+}
