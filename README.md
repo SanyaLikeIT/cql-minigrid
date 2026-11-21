@@ -3,13 +3,15 @@
 **Team 12 — Reinforcement Learning.** PyTorch implementations of offline DQN,
 discrete Conservative Q-Learning (CQL), and behavioral cloning (BC) for
 `MiniGrid-Dynamic-Obstacles-8x8-v0`. PPO supplies the recorded experience.
+[Presentation.pdf](docs/Presentation.pdf) defines the requirements;
+[the requirements map](docs/proposal_requirements.md) links slides to implementation.
 
-The completed CPU comparison contains 18 runs: three methods × two frozen
+The retained 50,000-transition pilot contains 18 runs: three methods × two frozen
 datasets × three training seeds. Every run uses 5,000 updates and the same
 100 held-out evaluation seeds. Compact results, plots, and replay GIFs are
 versioned here; datasets, model weights, and full episode logs stay local.
 
-## Results
+## Pilot results (approximately 50,000 transitions)
 
 Values are mean ± **sample standard deviation across three training seeds**
 (0, 1, 2). Rates first come from 100 episodes per run; error bars describe
@@ -70,7 +72,8 @@ Package versions and the experiment source hashes are stored in the report.
 ## Environment and data
 
 The agent receives the full symbolic grid (object one-hot, normalized
-color/state), direction one-hot, and elapsed time: 837 float32 values.
+color/state), direction one-hot, and elapsed time: 837 float32 values. The named `elapsed_steps` component is encoded as
+`elapsed_steps / 256` at index 836, and reset/step info retains the integer counter.
 `configs/observation.json` defines the shared interface. Actions are left,
 right, and forward. The original 256-step horizon and rewards are retained
 for collection and evaluation: ordinary step 0, collision -1, and success
@@ -103,8 +106,8 @@ validation success for the final source.
 `mixed` chooses sources per episode with probabilities 0.50 final PPO,
 0.25 early PPO, and 0.25 random. Actual episode counts are 462 / 240 / 252;
 actual transition counts are 47,163 / 958 / 2,088. These proportions differ
-because PPO episodes are longer. Both datasets target 50,000 transitions,
-following the current assignment; the earlier proposal suggested 200,000.
+because PPO episodes are longer. These files are pilot datasets. The [project proposal](docs/Presentation.pdf)
+sets approximately 200,000 transitions per final dataset.
 The final complete episode can exceed the target by up to 255 transitions.
 
 ![Episode and transition source composition](reports/dataset_sources.png)
