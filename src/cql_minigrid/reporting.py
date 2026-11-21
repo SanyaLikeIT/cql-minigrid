@@ -52,7 +52,7 @@ def write_reports(result,root,reports):
     write_json(reports/'summary.json',result)
     fields=['dataset','method','seed','updates',*METRICS,'training_seconds','checkpoint_sha256','dataset_sha256']
     with (reports/'per_run.csv').open('w',newline='') as file:
-        writer=csv.DictWriter(file,fieldnames=fields);writer.writeheader()
+        writer=csv.DictWriter(file,fieldnames=fields,lineterminator='\n');writer.writeheader()
         for run in result['runs']:
             writer.writerow({key:run['metrics'][key] if key in METRICS else run[key] for key in fields})
     colors={'dqn':'#4c78a8','cql':'#f58518','bc':'#54a24b'}
