@@ -3,56 +3,132 @@
 **Team 12 — Reinforcement Learning.** PyTorch implementations of offline DQN,
 discrete Conservative Q-Learning (CQL), and behavioral cloning (BC) for
 `MiniGrid-Dynamic-Obstacles-8x8-v0`. PPO supplies the recorded experience.
-[Presentation.pdf](docs/Presentation.pdf) defines the requirements;
+[Presentation.pdf](docs/Presentation.pdf) defines the project requirements;
 [the requirements map](docs/proposal_requirements.md) links slides to implementation.
 
-The retained 50,000-transition pilot contains 18 runs: three methods × two frozen
-datasets × three training seeds. Every run uses 5,000 updates and the same
-100 held-out evaluation seeds. Compact results, plots, and replay GIFs are
-versioned here; datasets, model weights, and full episode logs stay local.
+The final experiment uses **200,035 strong transitions and 200,019 mixed
+transitions**, with 18 fresh offline runs: three methods × two frozen datasets
+× three training seeds. Each run has 5,000 updates and 100 common held-out test
+episodes. Reports include all five proposal metrics, PPO collector references,
+and MP4/GIF gameplay. The 50,000-transition pilot and the small CPU pilot are retained.
 
-## Pilot results (approximately 50,000 transitions)
+## Final results
 
-Values are mean ± **sample standard deviation across three training seeds**
-(0, 1, 2). Rates first come from 100 episodes per run; error bars describe
-training-seed variation, rather than uncertainty over pooled episodes.
+Values are mean ± **sample standard deviation across training seeds 0, 1, 2**.
+Each run first computes its metrics on test seeds 20000–20099; error bars
+represent variation across training seeds. They are not confidence intervals.
 
-| Dataset | Method | Success % | Collision % | Return |
-|---|---|---:|---:|---:|
-| strong | DQN | 0.0 ± 0.0 | 100.0 ± 0.0 | -1.000 ± 0.000 |
-| strong | CQL | 57.0 ± 5.3 | 21.3 ± 3.1 | 0.234 ± 0.054 |
-| strong | BC | 53.3 ± 9.8 | 20.7 ± 5.9 | 0.216 ± 0.021 |
-| mixed | DQN | 12.0 ± 19.9 | 48.0 ± 19.5 | -0.368 ± 0.219 |
-| mixed | CQL | 62.0 ± 4.0 | 16.3 ± 0.6 | 0.332 ± 0.042 |
-| mixed | BC | 57.7 ± 10.1 | 21.0 ± 1.0 | 0.256 ± 0.075 |
+| Dataset | Method | Success % | Collision % | Timeout % | Return | Successful steps |
+|---|---|---:|---:|---:|---:|---:|
+| strong | DQN | 0.0 ± 0.0 | 100.0 ± 0.0 | 0.0 ± 0.0 | -1.000 ± 0.000 | — |
+| strong | CQL | 61.7 ± 1.5 | 21.3 ± 1.2 | 17.0 ± 2.6 | 0.276 ± 0.004 | 58.6 ± 0.6 |
+| strong | BC | 58.3 ± 5.0 | 22.3 ± 0.6 | 19.3 ± 5.1 | 0.239 ± 0.047 | 59.1 ± 3.6 |
+| mixed | DQN | 15.7 ± 26.3 | 28.0 ± 11.1 | 56.3 ± 36.8 | -0.135 ± 0.146 | 21.1 ± 0.1 |
+| mixed | CQL | 60.7 ± 6.1 | 13.3 ± 1.2 | 26.0 ± 6.0 | 0.357 ± 0.039 | 54.2 ± 6.9 |
+| mixed | BC | 55.0 ± 4.6 | 19.0 ± 2.0 | 26.0 ± 5.6 | 0.248 ± 0.037 | 57.9 ± 3.4 |
 
-![Success, collision, and return by method and dataset](reports/pilot-50k/metrics.png)
+Successful steps means episode length conditional on success, averaged across
+runs with successes. `mixed` DQN has two such runs; `strong` DQN has none
+(`—`). The JSON records these valid-seed counts. Every other metric uses all
+three runs. Rates may not sum to exactly 100% after rounding.
 
-CQL has the highest mean success and return on both files. Its success
-advantage over BC is 3.7 percentage points on `strong` and 4.3 on `mixed`,
-which is small compared with the observed seed variation. Three seeds do
-not establish a general advantage over BC. DQN reached no successes on
-`strong`; on `mixed` it averaged 12% with substantial variation across seeds.
+![Success, collision, and return](reports/metrics.png)
+![Timeout rate and steps on successful episodes](reports/ending_metrics.png)
 
-All three methods had higher mean success on `mixed` in these runs. This
-setting varies coverage as well as source quality: failed early/random
-trajectories add actions and negative outcomes, and 93.9% of mixed
-**transitions** still come from final PPO. The comparison does not isolate
-the causal effect of lower-quality data. It uses one collector seed, one
-frozen file per condition, one CQL alpha (1.0), and one update budget.
+CQL has the highest mean success and return on both datasets. Its success
+advantage over BC is 3.3 percentage points on `strong` and 5.7 on `mixed`;
+three seeds and the observed variation do not establish a general advantage.
+DQN fails on `strong` and varies substantially across seeds on `mixed`.
 
-Final PPO reached 62% success, 19% collision, and mean return 0.312 on the
-same 100 held-out seeds. Early PPO and random each had 0% success and 100%
-collision. These collector references use one checkpoint each and have no
-training-seed error bars.
+For CQL, `mixed` reduces collision by 8 percentage points and increases timeout
+by 9 points relative to `strong`, while success decreases by 1 point and return
+increases by 0.081. A timeout returns zero while a collision returns -1, so the
+higher return coexists with more timeouts. BC also has lower mean success on
+`mixed`. This experiment varies source quality and action coverage together:
+93.8% of mixed transitions still come from final PPO. It uses one collector
+training seed, one frozen file per condition, one CQL alpha (1.0), and one
+update budget; it does not isolate a causal effect of lower-quality data.
 
-[Per-run CSV](reports/pilot-50k/per_run.csv), [full compact report](reports/pilot-50k/summary.json),
-and [hardware/build details](reports/pilot-50k/runtime.json) retain the measured values.
-[The artifact audit](reports/pilot-50k/integrity.json) verified both datasets, all 18
-checkpoints, 1,800 evaluation episodes, and six replays.
-Timeout rates and steps on successful episodes are included in the JSON/CSV.
+## Collector reference on the same test seeds
 
-## Install and check
+These references use the exact same 100 held-out seeds as every offline run.
+Each source has one checkpoint or policy, so no training-seed error bars apply.
+
+| Collector reference | Episodes | Success % | Collision % | Timeout % | Return | Successful steps |
+|---|---:|---:|---:|---:|---:|---:|
+| PPO final | 100 | 62.0 | 19.0 | 19.0 | 0.312 | 54.3 |
+| PPO early | 100 | 0.0 | 100.0 | 0.0 | -1.000 | — |
+| Random | 100 | 0.0 | 100.0 | 0.0 | -1.000 | — |
+
+![PPO and random collector outcomes](reports/collector_reference.png)
+
+[Per-run CSV](reports/per_run.csv), [collector reference CSV](reports/collector_reference.csv),
+[full compact report](reports/summary.json), and [runtime details](reports/runtime.json)
+retain the measured values. The [artifact audit](reports/integrity.json) verifies
+both final files, 18 checkpoints, 1,800 offline evaluation episodes, 300 reference
+episodes, all five metric aggregates, and seven MP4/GIF replay pairs.
+
+## Environment, rewards, and frozen datasets
+
+All methods receive the full 8×8 symbolic grid (object one-hot plus normalized
+color/state), direction one-hot, and the named `elapsed_steps` component:
+837 float32 values. `elapsed_steps / 256` occupies index 836;
+reset/step info also exposes the integer counter, from 0 to 256.
+[configs/observation.json](configs/observation.json) defines this shared schema.
+The three actions are left, right, and forward.
+
+The slide 5 reward and ending rules apply to collection and evaluation:
+ordinary step reward 0; goal reward `1 - 0.9 * elapsed_steps / 256`;
+blocked forward action, including a wall, reward -1 and collision termination;
+timeout truncation at 256 steps. Success, collision, and timeout are distinct.
+If `terminated` and `truncated` are both true, success/collision takes priority
+over timeout. Data preserves both flags and the actual final next observation.
+
+| Final file | Transitions | Episodes | Success | Collision | Timeout | Mean return | Successful steps |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| strong | 200,035 | 2,018 | 65.1% | 20.0% | 14.9% | 0.288 | 71.4 |
+| mixed | 200,019 | 3,785 | 31.8% | 60.3% | 8.0% | -0.365 | 72.1 |
+
+The target is approximately **200,000 transitions per final file**. Collection
+finishes the last complete episode, allowing an overrun of up to 255 transitions.
+`strong` uses final PPO only. `mixed` samples final PPO / early PPO / random
+per episode with probabilities 0.50 / 0.25 / 0.25. Realized episode counts are
+1,848 / 984 / 953; transition counts are 187,604 / 4,085 / 8,330. Longer final
+PPO episodes explain the difference between episode and transition proportions.
+
+![Episode and transition source composition](reports/dataset_sources.png)
+
+NPZ files store observation, action, reward, next observation, `terminated`,
+`truncated`, raw int32 `elapsed_steps` and `next_elapsed_steps`, episode ID,
+source, environment seed, and policy seed. JSON metadata records checkpoint
+hashes, counts, source outcomes, and every episode's provenance. Collection
+resumes at complete-episode shard boundaries and rejects changed sources or
+configuration. The loader derives raw clocks for old pilot files without
+rewriting them. [Collection evidence](reports/final_collection.json) records
+final counts and hashes:
+
+```text
+strong b389e8b5f08e24d4a7d2a4000d0c6a6a9955b92fef54cc111752df0c93e42f42
+mixed  fe406cc563231614bf9546e585c462b3203050b4f1c2c1ec7f937deedde7e62e
+```
+
+PPO alone trains with
+`original_reward + 0.2 * (distance_before - distance_after) - 0.005`, using
+Manhattan distance to the goal. Its time limit is terminal for the value target.
+This collector reward was selected using validation; recorded transitions and
+all reported evaluations use the original environment rewards. Two earlier
+401,408-step collector pilots (unshaped and potential-only) each had 0/64
+validation successes; diagnostics remain under `artifacts/pilots/`.
+
+Early PPO has 10,240 training steps and final PPO 401,408: targets of 10,000
+and 400,000 round to complete rollouts. Before collection, final PPO reached
+41/64 validation successes (64.06%); early PPO and random each reached 0/64.
+The final source must pass a 60% validation-success gate. The final collection
+reuses these validated PPO checkpoints with identical hashes and numerical
+observation encoding, recorded in `artifacts/final/collector_reuse.json`.
+All 18 final offline policies were trained afresh on the 200k files.
+
+## Install and reproduce
 
 Run commands from the repository root with **Python 3.12**:
 
@@ -64,176 +140,112 @@ python3.12 -m venv .venv
 .venv/bin/python -m pytest -q
 ```
 
-The project's `.venv` is ready on the development machine. Recorded runs
-used CPU on an Intel i7-12650H with PyTorch 2.14.1+cu130; CUDA was unavailable.
-CI installs the CPU wheel and runs tests plus a complete small pipeline.
-Package versions and the experiment source hashes are stored in the report.
+`imageio-ffmpeg` supplies FFmpeg for MP4 export. Training uses CPU; the recorded
+machine is an Intel Core i7-12650H. Its installed PyTorch build is
+`2.14.1+cu130`, with CUDA unavailable. One worker and one PyTorch thread bound
+memory use. The default artifact root is `artifacts/final`.
 
-## Environment and data
-
-The agent receives the full symbolic grid (object one-hot, normalized
-color/state), direction one-hot, and elapsed time: 837 float32 values. The named `elapsed_steps` component is encoded as
-`elapsed_steps / 256` at index 836, and reset/step info retains the integer counter.
-`configs/observation.json` defines the shared interface. Actions are left,
-right, and forward. The original 256-step horizon and rewards are retained
-for collection and evaluation: ordinary step 0, collision -1, and success
-`1 - 0.9 * steps / 256`. A blocked forward action includes walls.
-
-Success, collision, and timeout are distinct. Datasets retain both
-`terminated` and `truncated`; if both are true, terminal success/collision
-wins over timeout in outcome counts. The final next observation is stored,
-without substituting an observation from the next episode.
-
-PPO alone trains with
-`original_reward + 0.2 * (distance_before - distance_after) - 0.005`, using
-Manhattan distance to the goal. Its time limit is terminal for the value
-target. This collector reward was chosen using validation; saved data and
-all reported evaluations use the original rewards. Two 401,408-step pilots
-(unshaped and potential-only) each had 0/64 validation successes; their logs
-remain under `artifacts/pilots/`.
-
-The early PPO checkpoint has 10,240 steps and the final one 401,408
-(configured targets 10,000 and 400,000 round to complete PPO rollouts).
-Before collection, final PPO reached 41/64 validation successes (64.06%);
-early PPO and random each reached 0/64. Collection requires at least 60%
-validation success for the final source.
-
-| Retained pilot file | Transitions | Episodes | Episode success | Episode collision | Episode timeout | Mean return |
-|---|---:|---:|---:|---:|---:|---:|
-| strong | 50,058 | 488 | 62.9% | 21.5% | 15.6% | 0.251 |
-| mixed | 50,209 | 954 | 31.6% | 60.5% | 8.0% | -0.369 |
-
-`mixed` chooses sources per episode with probabilities 0.50 final PPO,
-0.25 early PPO, and 0.25 random. The pilot episode counts are 462 / 240 / 252;
-actual transition counts are 47,163 / 958 / 2,088. These proportions differ
-because PPO episodes are longer. These files are pilot datasets. The [project proposal](docs/Presentation.pdf)
-sets approximately 200,000 transitions per final dataset.
-The final complete episode can exceed the target by up to 255 transitions.
-
-![Episode and transition source composition](reports/pilot-50k/dataset_sources.png)
-
-NPZ files store observation, action, reward, next observation, both ending
-flags, episode ID, source, environment seed, and policy seed. JSON metadata
-records source checkpoints/hashes, actual counts, per-source outcomes, and
-every episode's provenance. Collection resumes at complete-episode shard
-boundaries and rejects changed sources or configuration.
-
-The final configuration targets 200,000 transitions per dataset. Final files
-and runs live under `artifacts/final/`; the 50,000-transition pilot remains
-unchanged under `artifacts/main/`, with compact reports in
-`reports/pilot-50k/`. `configs/pilot_50k.json` retains its collection budget.
-The separate small CPU pilot remains in `configs/smoke.json`.
-New transitions store `elapsed_steps` and `next_elapsed_steps` as int32;
-loading old pilot files derives these counters without rewriting them.
-
-## Reproduce
-
-The final report includes success, collision, timeout, return, and mean steps
-on successful episodes. PPO collector references use the same test seeds.
-Gameplay is exported as H.264/yuv420p MP4 and GIF with separate metadata.
-
-```sh
-.venv/bin/python -m cql_minigrid replay --method ppo --format mp4 --output artifacts/final/replays/ppo-collector.mp4
-```
-
-Run the entire main pipeline, including collector training if absent:
+Run the complete final pipeline, training PPO if its checkpoint is absent:
 
 ```sh
 .venv/bin/python -m cql_minigrid pipeline --config configs/main.json --root artifacts/final --workers 1 --reports reports
 ```
 
-Or run each phase explicitly:
+Or execute phases separately:
 
 ```sh
 .venv/bin/python -m cql_minigrid ppo --config configs/main.json --root artifacts/final
 .venv/bin/python -m cql_minigrid collect --config configs/main.json --root artifacts/final
-.venv/bin/python -m cql_minigrid train --method dqn --dataset artifacts/final/datasets/strong.npz --seed 0
-.venv/bin/python -m cql_minigrid train --method cql --dataset artifacts/final/datasets/strong.npz --seed 0
-.venv/bin/python -m cql_minigrid train --method bc --dataset artifacts/final/datasets/strong.npz --seed 0
 .venv/bin/python -m cql_minigrid experiments --config configs/main.json --root artifacts/final --workers 1 --reports reports
 .venv/bin/python -m cql_minigrid evaluate --method cql --checkpoint artifacts/final/runs/strong/cql/seed-0.pt --output artifacts/final/evaluation/strong-cql-0.json
-.venv/bin/python -m cql_minigrid replay --method cql --checkpoint artifacts/final/runs/strong/cql/seed-0.pt --output artifacts/final/replays/strong-cql-0.gif
+.venv/bin/python -m cql_minigrid replay --method cql --checkpoint artifacts/final/runs/mixed/cql/seed-0.pt --format mp4 --output artifacts/final/replays/mixed-cql-manual.mp4
+.venv/bin/python -m cql_minigrid replay --method ppo --format mp4 --output artifacts/final/replays/ppo-collector-manual.mp4
 ```
 
-The `experiments` command completes/resumes all 18 runs from existing
-frozen datasets. The final matrix runs one CPU worker with one thread to bound memory use.
-For manual training, repeat the commands with seeds 1 and 2 and the mixed
-file, or let `experiments` handle the matrix. Add `--resume` when manually
-continuing a PPO or offline training command. `--method ppo` evaluates the
-final collector; `--method random` requires no checkpoint.
+`experiments` completes/resumes the full 18-run matrix from frozen datasets and
+rejects files whose collection budget differs from the selected configuration.
+For a manual offline run, use `train --method cql --dataset
+artifacts/final/datasets/strong.npz --seed 0` (also `dqn` or `bc`). Add `--resume`
+when explicitly continuing existing PPO/offline checkpoints. `evaluate --method
+ppo` uses the final collector; `--method random` needs no checkpoint.
+Use `replay --format gif` with a `.gif` output for GIF export.
 
-`configs/seeds.json` separates PPO, collection, validation, and evaluation
-seeds. Validation seeds are 10000–10063, final evaluation seeds 20000–20099,
-and dataset environment seeds start at 1000000 / 1100000. Evaluation seeds
-are checked against validation, PPO, and recorded collection seeds.
+[configs/seeds.json](configs/seeds.json) separates PPO training seed 12,
+validation seeds 10000–10063, test seeds 20000–20099, and collection environment
+seeds starting at 1000000 / 1100000. Tests are checked for overlap with all other
+seed sets and recorded collection episodes. Offline training seeds are 0, 1, 2.
 
-DQN and CQL share a two-layer 128-unit ReLU Q-network, Adam (learning rate
-0.0003), batch size 256, gamma 0.99, Huber TD loss, and a target copy every
-250 updates. Both ending flags mask the bootstrap for this observed finite
-horizon. Tests also cover continuing-task bootstrapping on truncation.
+DQN and CQL share two 128-unit ReLU layers, Adam at 0.0003, batch size 256,
+gamma 0.99, Huber TD loss, 5,000 updates, and a hard target copy every 250 updates.
+Both ending flags mask bootstrapping for this observed finite horizon.
 CQL adds `alpha * mean(logsumexp(Q(s, all_actions)) - Q(s, recorded_action))`
-with stable `torch.logsumexp`; DQN applies alpha=0. BC uses the same network
-width and update budget with cross-entropy on recorded actions.
+with stable `torch.logsumexp` and alpha 1; DQN uses alpha 0. BC uses the same
+network width and update budget with cross-entropy on recorded actions.
+Offline updates never reset or step an environment. Atomic checkpoints retain
+optimizer, target network where applicable, batch sampler, and all RNG states.
+CPU tests verify exact offline resume. PPO restores its optimizer but restarts
+episodes, so resumed PPO is not bitwise equivalent to uninterrupted training.
 
-Offline updates never reset or step the environment. Atomic checkpoints
-save model, optimizer, update count, batch sampler and Python/NumPy/PyTorch
-RNG state, plus the target network for Q-learning. Resume tests reproduce
-uninterrupted parameters and loss history exactly on CPU. PPO restores its
-optimizer but restarts environment episodes, so resumed PPO is not bitwise
-equivalent to uninterrupted collection-policy training.
+## Retained pilots, checks, and artifacts
 
-## Pilot, checks, and artifacts
+The original 50k files, models, and logs remain unchanged under `artifacts/main/`;
+[their compact reports](reports/pilot-50k/summary.json) remain in
+`reports/pilot-50k/`, with [configs/pilot_50k.json](configs/pilot_50k.json).
+The separate small CPU pilot is preserved:
 
 ```sh
 .venv/bin/python -m cql_minigrid pipeline --config configs/smoke.json --root artifacts/proposal-smoke --reports artifacts/proposal-smoke/reports
 ```
 
-The measured full CPU pilot took 7.23 seconds (six small runs). A three-worker
-resume took 5.87 seconds and kept all six checkpoints and metric summaries
-unchanged. The representative 100-update DQN pilot took 0.31 seconds for
-updates, 1.52 seconds including dataset/model setup; it continued into the
-main seed-0 run. Final PPO's timer recorded 111.28 seconds; the 50,000-transition pilot matrix
-recorded 130.62 seconds with three workers, including evaluation and replay
-export. Imports/setup outside each timer are excluded.
+The measured small pipeline took **9.04 s** (six tiny runs including MP4/GIF).
+Final 200k collection took **144.74 s**; the final offline matrix, evaluation,
+references, and gameplay took **340.23 s**. Original PPO training took
+111.28 s and its checkpoints were reused; this is not new PPO training time.
+Timers exclude imports/setup outside their measured scopes. Runtime records
+and older pilot timings are retained separately.
 
-Local pytest and CI cover seeded observations, ending priority, TD masks,
-known CQL values, alpha=0 loss/gradient equality, exact offline resume,
-dataset checksums, replay/metric agreement, and sample-SD aggregation.
-The small pipeline disables the collector quality gate. Full training runs
-locally; GitHub Actions uses `configs/smoke.json`.
+The 26 tests cover seeded observations, exact rewards and ending priority,
+raw clocks, TD masks, known CQL values, alpha=0 loss/gradient equality, exact
+offline resume, checksums, replay/metric agreement, and sample-SD aggregation.
+GitHub Actions runs these tests and the small pipeline; full experiments run
+locally. The small configuration disables the collector quality gate.
 
-| Local path | Contents |
+| Path | Contents |
 |---|---|
 | `artifacts/final/datasets/` | Frozen NPZ/JSON files and resumable shards |
-| `artifacts/final/ppo/` | Early/latest/final PPO checkpoints and learning history |
-| `artifacts/final/runs/{dataset}/{method}/seed-{seed}.pt` | Offline checkpoints |
-| `artifacts/final/runs/` | Per-run training and 100-episode evaluation JSON |
-| `artifacts/final/replays/` | Replay GIFs and episode metadata |
-| `artifacts/final/results.json` | Complete matrix summaries and experiment provenance |
-| `artifacts/final/*.log` | Main PPO, collection, and experiment logs |
-| `artifacts/full-pilot/`, `artifacts/pilots/` | Pilot timings and failed collector diagnostics |
-| `reports/` | Compact tracked tables, plots, runtime details, and demonstrations |
+| `artifacts/final/ppo/` | Reused early/latest/final PPO checkpoints and history |
+| `artifacts/final/runs/{dataset}/{method}/seed-{seed}.pt` | Final offline checkpoints |
+| `artifacts/final/runs/` | Training logs and 100-episode evaluation JSON |
+| `artifacts/final/references/` | PPO final/early and random reference evaluations |
+| `artifacts/final/replays/` | MP4/GIF gameplay and separate format metadata |
+| `artifacts/final/results.json` | Complete final matrix and implementation provenance |
+| `artifacts/final/*.log` | Collection and experiment logs |
+| `artifacts/main/`, `reports/pilot-50k/` | Retained 50k pilot and compact reports |
+| `artifacts/proposal-smoke/`, `artifacts/pilots/` | Small pilot and collector diagnostics |
+| `reports/` | Tracked final tables, plots, audit, runtime, and gameplay |
 
-Retained pilot dataset SHA-256 values:
+Raw datasets, weights, and full logs are local artifacts; compact reports and
+videos are versioned. The final source revision and file hashes are recorded
+in the report. [rendering.json](reports/rendering.json) identifies the renderer
+and its input-results hash. `cql-minigrid-project.zip` in the repository root
+contains the project and local artifacts, excluding Git, virtual environments,
+caches, and previous project archives; it is kept below 500 MB.
 
-```text
-strong 9996626ec7abf42ca1be736f9e96e9917fc81fb40748a76d95e8e261c8fcbc11
-mixed  7cb0d7376dc0c7dfb0fb76c09779477ed453609465b5af90edc1c74095f42d3a
-```
+## Gameplay
 
-The experiment report records the exact implementation revision and hashes.
-`reports/rendering.json` separately records the final plot renderer and its
-input-results hash; moving legends after the run changes presentation only.
+Every offline demonstration uses training seed 0 and test seed 20000; the PPO
+reference uses the same test seed. Failures are included. Each MP4 has H.264
+video, yuv420p pixels, and a `.mp4.json` sidecar with the complete episode outcome,
+steps, reward, checkpoint/file hashes, sampled frame indices, and encoded count.
+Playback samples up to 80 frames at 8 fps; episode steps refer to the full run.
+GIFs have independent `.gif.json` metadata for the same episode.
 
-## Demonstrations
-
-All six GIFs show training seed 0 and evaluation seed 20000. They include
-failures; every ending is labeled here and retained in its adjacent JSON.
-Subsampled playback lasts about ten seconds or less.
-
-| Dataset | DQN | CQL | BC |
+| Dataset | DQN MP4 | CQL MP4 | BC MP4 |
 |---|---|---|---|
-| strong | [collision](reports/pilot-50k/demos/strong-dqn.gif) | [collision](reports/pilot-50k/demos/strong-cql.gif) | [collision](reports/pilot-50k/demos/strong-bc.gif) |
-| mixed | [collision](reports/pilot-50k/demos/mixed-dqn.gif) | [success](reports/pilot-50k/demos/mixed-cql.gif) | [success](reports/pilot-50k/demos/mixed-bc.gif) |
+| strong | [collision, 10 steps](reports/demos/strong-dqn.mp4) | [success, 64 steps](reports/demos/strong-cql.mp4) | [collision, 62 steps](reports/demos/strong-bc.mp4) |
+| mixed | [timeout, 256 steps](reports/demos/mixed-dqn.mp4) | [success, 148 steps](reports/demos/mixed-cql.mp4) | [success, 112 steps](reports/demos/mixed-bc.mp4) |
 
-![CQL on mixed data, evaluation seed 20000](reports/pilot-50k/demos/mixed-cql.gif)
+[PPO collector MP4: success, 64 steps](reports/demos/ppo-collector.mp4).
+The matching GIFs share these filenames with a `.gif` extension.
+
+![CQL on mixed data, test seed 20000](reports/demos/mixed-cql.gif)
