@@ -19,8 +19,28 @@
     "transitions": 64,
     "minimum_collector_success": 0.0,
     "mixtures": {
-      "strong": {"strong": 1.0},
-      "mixed": {"strong": 0.5, "early": 0.25, "random": 0.25}
+      "strong": {
+        "strong": 1.0
+      },
+      "mixed": {
+        "strong": 0.5,
+        "early": 0.25,
+        "random": 0.25
+      }
     }
+  },
+  "offline": {
+    "hidden": [
+      32,
+      32
+    ],
+    "updates": 16,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "gamma": 0.99,
+    "bootstrap_on_truncation": false,
+    "target_interval": 4,
+    "checkpoint_interval": 8,
+    "log_interval": 4
   }
 }
