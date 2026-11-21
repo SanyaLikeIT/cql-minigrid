@@ -106,3 +106,25 @@ Episode reports store seeds, outcomes, both ending flags, return, and steps.
 All methods use the exact same evaluation seed list. Replays show the first
 reserved seed; frame subsampling limits playback to about ten seconds,
 with the full episode length and stride retained in the GIF's JSON file.
+
+Run all six method/dataset combinations and three training seeds, or the
+complete pipeline from collector training onward, from the repository root:
+
+```sh
+.venv/bin/python -m cql_minigrid experiments --config configs/main.json --root artifacts/main --workers 3 --reports reports
+.venv/bin/python -m cql_minigrid pipeline --config configs/main.json --root artifacts/main --workers 3 --reports reports
+```
+
+Both commands resume existing checkpoints and preserve completed evaluation
+files whose checkpoint hashes and evaluation seeds match. Each worker uses
+one CPU thread; three workers run independent seeds concurrently. The main
+comparison has 18 runs, each with 100 reserved evaluation episodes.
+Reports include mean and sample standard deviation over the three training
+seeds, individual-run CSV metrics, dataset/source hashes, package versions,
+source-code hashes, plots, and six replay GIFs.
+
+The full CPU pilot and CI use the same pipeline at a smaller budget:
+
+```sh
+.venv/bin/python -m cql_minigrid pipeline --config configs/smoke.json --root artifacts/full-pilot --reports artifacts/full-pilot/reports
+```
