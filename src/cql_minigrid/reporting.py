@@ -5,7 +5,7 @@ import shutil
 
 import numpy as np
 
-from .common import write_json
+from .common import sha256, write_json
 
 METRICS = ['success_rate','collision_rate','timeout_rate','return_mean','successful_steps_mean']
 
@@ -71,7 +71,8 @@ def write_reports(result,root,reports):
         ax.set_xticks(range(len(datasets)),datasets);ax.set_title(title)
         ax.grid(axis='y',alpha=.2);ax.set_axisbelow(True)
         if metric!='return_mean':ax.yaxis.set_major_formatter(PercentFormatter(1))
-    axes[0].legend(fontsize=8)
+    handles,labels=axes[0].get_legend_handles_labels()
+    fig.legend(handles,labels,loc='outside lower center',ncol=3,fontsize=9,frameon=False)
     fig.suptitle('Mean ± sample SD over training seeds; dots show individual runs',fontsize=10)
     fig.savefig(reports/'metrics.png',dpi=180);plt.close(fig)
     fig,axes=plt.subplots(1,2,figsize=(8,3.5),layout='constrained')
@@ -79,13 +80,18 @@ def write_reports(result,root,reports):
         bottom=np.zeros(len(datasets))
         for source,color in [('strong','#4c78a8'),('early','#f58518'),('random','#bab0ac')]:
             values=[result['datasets'][d]['sources'].get(source,{}).get(unit,0)/result['datasets'][d][unit] for d in datasets]
-            ax.bar(datasets,values,bottom=bottom,label=source,color=color,width=.6)
+            label={'strong':'final PPO','early':'early PPO','random':'random'}[source]
+            ax.bar(datasets,values,bottom=bottom,label=label,color=color,width=.6)
             bottom+=values
         ax.set_title(title);ax.yaxis.set_major_formatter(PercentFormatter(1));ax.set_ylim(0,1.05)
-    axes[1].legend(loc='upper right',fontsize=8)
+    handles,labels=axes[1].get_legend_handles_labels()
+    fig.legend(handles,labels,loc='outside lower center',ncol=3,fontsize=9,frameon=False)
     fig.savefig(reports/'dataset_sources.png',dpi=180);plt.close(fig)
     demo_dir=reports/'demos';demo_dir.mkdir(exist_ok=True)
     for path in (root/'replays').glob('*'):
         if path.suffix in ['.gif','.json']:
             shutil.copy2(path,demo_dir/path.name)
     (reports/'results_table.txt').write_text(results_table(result['aggregate'])+'\n')
+    write_json(reports/'rendering.json', {'reporting_source_sha256':sha256(Path(__file__)),
+               'input_results_sha256':sha256(root/'results.json'),
+               'matplotlib_version':matplotlib.__version__})
