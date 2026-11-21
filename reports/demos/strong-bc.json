@@ -1,0 +1,15 @@
+{
+  "seed": 20000,
+  "steps": 62,
+  "return": -1.0,
+  "outcome": "collision",
+  "terminated": true,
+  "truncated": false,
+  "frame_stride": 1,
+  "fps": 8,
+  "gif_sha256": "57dd2a9466fb071e9afec553f81159171131b17222c827244992d776e7f520a4",
+  "checkpoint_sha256": "aef0a25d9aef14cc5c712b18909430eb7265634eeaaab88d39cafa18a4f7da0c",
+  "method": "bc",
+  "dataset": "strong",
+  "training_seed": 0
+}

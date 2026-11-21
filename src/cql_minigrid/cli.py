@@ -1,12 +1,13 @@
 import argparse
 import json
+import os
 import platform
 from pathlib import Path
 
 
 def main():
     parser = argparse.ArgumentParser(description="Team 12 offline MiniGrid experiments")
-    parser.add_argument("command", choices=["doctor", "env-smoke", "ppo", "collect", "train", "evaluate", "replay"])
+    parser.add_argument("command", choices=["doctor", "env-smoke", "ppo", "collect", "train", "evaluate", "replay", "experiments", "pipeline"])
     parser.add_argument("--config", default="configs/main.json")
     parser.add_argument("--root", default="artifacts/main")
     parser.add_argument("--resume", action="store_true")
@@ -16,7 +17,10 @@ def main():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output")
     parser.add_argument("--checkpoint")
+    parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--reports")
     args = parser.parse_args()
+    os.environ.setdefault("MPLCONFIGDIR", str(Path(args.root).resolve() / ".matplotlib"))
     if args.command == "doctor":
         import gymnasium
         import minigrid
@@ -75,3 +79,10 @@ def main():
             output = args.output or Path(args.root) / "replays" / f"{args.method}-seed-{args.seed}.gif"
             policy, _ = load_policy(args.method, checkpoint)
             print(json.dumps(export_gif(policy, output, seeds[0]), indent=2))
+    elif args.command in ["experiments", "pipeline"]:
+        from .experiments import pipeline, run_matrix
+        config = json.loads(Path(args.config).read_text())
+        run = pipeline if args.command == "pipeline" else run_matrix
+        result = run(config, args.root, workers=args.workers, reports=args.reports)
+        print(json.dumps({"runs": len(result["runs"]), "seconds": result["matrix_session_seconds"],
+                          "aggregate": result["aggregate"]}, indent=2))
