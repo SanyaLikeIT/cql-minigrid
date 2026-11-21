@@ -18,7 +18,7 @@ def test_finite_horizon_and_continuing_time_limit_targets():
                                torch.tensor([10., 2., 30., 4.]))
 
 
-@pytest.mark.parametrize('method', ['dqn', 'cql'])
+@pytest.mark.parametrize('method', ['dqn', 'cql', 'bc'])
 def test_resume_matches_uninterrupted_updates(tmp_path, monkeypatch, method):
     dataset = tmp_path / 'random.npz'
     collect_dataset(dataset, {'random': random_policy}, {'random': 1.}, target=32,

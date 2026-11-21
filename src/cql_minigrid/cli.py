@@ -12,7 +12,7 @@ def main():
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--transitions", type=int)
     parser.add_argument("--dataset")
-    parser.add_argument("--method", choices=["dqn", "cql"], default="dqn")
+    parser.add_argument("--method", choices=["dqn", "cql", "bc"], default="dqn")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output")
     args = parser.parse_args()

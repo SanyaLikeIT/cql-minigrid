@@ -88,3 +88,8 @@ network, batches, TD targets, optimizer, and update budget as DQN, adding
 The main configuration fixes alpha at 1.0. `torch.logsumexp` keeps the
 penalty stable; tests cover known Q-values, large common shifts, and exact
 loss/gradient equality with DQN when alpha is zero.
+
+Use `--method bc` for behavioral cloning. Its two-layer classifier predicts
+the recorded action with cross-entropy and uses no rewards, next states,
+or TD targets in its updates. It has the same observation interface,
+5,000-update budget, checkpoint/resume behavior, and argmax policy adapter.

@@ -61,7 +61,7 @@ def save_checkpoint(path, checkpoint):
 
 
 def train_offline(dataset, output, config, *, method='dqn', seed=0, resume=False, stop_after=None):
-    if method not in ['dqn', 'cql']:
+    if method not in ['dqn', 'cql', 'bc']:
         raise ValueError('Unknown offline method')
     seed_everything(seed)
     data, metadata = load_dataset(dataset)
@@ -69,8 +69,9 @@ def train_offline(dataset, output, config, *, method='dqn', seed=0, resume=False
     identity = {'method': method, 'seed': seed, 'config': config, 'dataset_sha256': metadata['sha256']}
     rng = np.random.default_rng(seed)
     model = ActionNetwork(data['observation'].shape[1], config['hidden'])
-    target_model = ActionNetwork(data['observation'].shape[1], config['hidden'])
-    target_model.load_state_dict(model.state_dict())
+    target_model = None if method == 'bc' else ActionNetwork(data['observation'].shape[1], config['hidden'])
+    if target_model is not None:
+        target_model.load_state_dict(model.state_dict())
     optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'])
     update, history, seconds_before = 0, [], 0.0
     if output.exists():
@@ -80,39 +81,49 @@ def train_offline(dataset, output, config, *, method='dqn', seed=0, resume=False
         if saved['identity'] != identity:
             raise ValueError('Checkpoint dataset, seed, method, or config differs')
         model.load_state_dict(saved['model'])
-        target_model.load_state_dict(saved['target_model'])
+        if target_model is not None:
+            target_model.load_state_dict(saved['target_model'])
         optimizer.load_state_dict(saved['optimizer'])
         rng.bit_generator.state = saved['batch_rng']
         torch.set_rng_state(saved['torch_rng'])
         np.random.set_state(saved['numpy_rng'])
         random.setstate(saved['python_rng'])
         update, history, seconds_before = saved['updates'], saved['history'], saved['seconds']
-    tensors = {key: torch.from_numpy(data[key]) for key in
-               ['observation', 'next_observation', 'action', 'reward', 'terminated', 'truncated']}
+    keys = ['observation', 'action'] if method == 'bc' else [
+        'observation', 'next_observation', 'action', 'reward', 'terminated', 'truncated']
+    tensors = {key: torch.from_numpy(data[key]) for key in keys}
     started = time.perf_counter()
     end = min(config['updates'], stop_after) if stop_after is not None else config['updates']
     for update in range(update + 1, end + 1):
         idx = rng.integers(len(data['action']), size=config['batch_size'])
         batch = {key: value[idx] for key, value in tensors.items()}
         q = model(batch['observation'])
-        with torch.no_grad():
-            next_values = target_model(batch['next_observation']).max(dim=1).values
-            target = td_targets(batch['reward'], next_values, batch['terminated'], batch['truncated'],
-                                config['gamma'], config['bootstrap_on_truncation'])
-        alpha = config['alpha'] if method == 'cql' else 0.0
-        loss, td, penalty = q_learning_loss(q, batch['action'], target, alpha)
+        if method == 'bc':
+            loss = F.cross_entropy(q, batch['action'])
+            td, penalty = q.new_zeros(()), q.new_zeros(())
+        else:
+            with torch.no_grad():
+                next_values = target_model(batch['next_observation']).max(dim=1).values
+                target = td_targets(batch['reward'], next_values, batch['terminated'], batch['truncated'],
+                                    config['gamma'], config['bootstrap_on_truncation'])
+            alpha = config['alpha'] if method == 'cql' else 0.0
+            loss, td, penalty = q_learning_loss(q, batch['action'], target, alpha)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 10.0)
         optimizer.step()
-        if update % config['target_interval'] == 0:
+        if target_model is not None and update % config['target_interval'] == 0:
             target_model.load_state_dict(model.state_dict())
         if update == 1 or update % config['log_interval'] == 0 or update == end:
-            history.append({'update': update, 'loss': float(loss.detach()), 'q_mean': float(q.detach().mean()),
-                            'td_loss': float(td.detach()), 'conservative_penalty': float(penalty.detach())})
+            record = {'update': update, 'loss': float(loss.detach()),
+                      'td_loss': float(td.detach()), 'conservative_penalty': float(penalty.detach())}
+            record['logit_mean' if method == 'bc' else 'q_mean'] = float(q.detach().mean())
+            if method == 'bc':
+                record['action_accuracy'] = float((q.detach().argmax(1) == batch['action']).float().mean())
+            history.append(record)
         if update % config['checkpoint_interval'] == 0 or update == end:
             checkpoint = {'identity': identity, 'model': model.state_dict(),
-                          'target_model': target_model.state_dict(), 'optimizer': optimizer.state_dict(),
+                          'target_model': target_model.state_dict() if target_model is not None else None, 'optimizer': optimizer.state_dict(),
                           'observation': metadata['observation'], 'updates': update, 'history': history,
                           'batch_rng': rng.bit_generator.state, 'torch_rng': torch.get_rng_state(),
                           'numpy_rng': np.random.get_state(), 'python_rng': random.getstate(),
