@@ -63,3 +63,21 @@ retained under `artifacts/pilots/unshaped/` and `artifacts/pilots/potential-only
 
 For a small CPU collector pilot, use `configs/smoke.json` and a separate
 `--root artifacts/smoke`. This pilot disables the collector quality gate.
+
+Train offline DQN from one frozen file:
+
+```sh
+.venv/bin/python -m cql_minigrid train --method dqn --dataset artifacts/main/datasets/strong.npz --seed 0
+```
+
+Training uses no environment steps. The Q-network has two 128-unit ReLU
+layers; Adam uses learning rate 0.0003, batch size 256, and 5,000 updates.
+The target network is copied every 250 updates. TD targets use the maximum
+target-network value and Huber loss. Since elapsed time is observed and
+the task has a finite horizon, both `terminated` and `truncated` mask the
+bootstrap. The tested `bootstrap_on_truncation` option supports continuing
+tasks but is false in these experiments.
+
+Checkpoints include model, target network, optimizer, update count, batch
+sampler state, and Python/NumPy/PyTorch RNG states. Add `--resume` to
+continue the same run; changed datasets or configurations are rejected.
