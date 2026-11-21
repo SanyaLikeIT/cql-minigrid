@@ -10,7 +10,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
   "torch==2.14.1", "gymnasium==1.4.0", "minigrid==3.2.0",
   "stable-baselines3==2.9.0", "numpy==2.5.4", "matplotlib==3.11.2",
-  "imageio==2.38.1", "pillow==12.3.0",
+  "imageio==2.38.1", "imageio-ffmpeg==0.6.0", "pillow==12.3.0",
 ]
 
 [project.optional-dependencies]
