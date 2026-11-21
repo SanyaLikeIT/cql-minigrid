@@ -81,3 +81,10 @@ tasks but is false in these experiments.
 Checkpoints include model, target network, optimizer, update count, batch
 sampler state, and Python/NumPy/PyTorch RNG states. Add `--resume` to
 continue the same run; changed datasets or configurations are rejected.
+
+Use `--method cql` for discrete conservative Q-learning. It runs the same
+network, batches, TD targets, optimizer, and update budget as DQN, adding
+`alpha * mean(logsumexp(Q(s, all_actions)) - Q(s, recorded_action))`.
+The main configuration fixes alpha at 1.0. `torch.logsumexp` keeps the
+penalty stable; tests cover known Q-values, large common shifts, and exact
+loss/gradient equality with DQN when alpha is zero.

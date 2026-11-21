@@ -12,7 +12,7 @@ def main():
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--transitions", type=int)
     parser.add_argument("--dataset")
-    parser.add_argument("--method", choices=["dqn"], default="dqn")
+    parser.add_argument("--method", choices=["dqn", "cql"], default="dqn")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output")
     args = parser.parse_args()
@@ -56,4 +56,4 @@ def main():
         config = json.loads(Path(args.config).read_text())
         dataset = Path(args.dataset) if args.dataset else Path(args.root) / "datasets/strong.npz"
         output = Path(args.output) if args.output else Path(args.root) / "runs" / dataset.stem / args.method / f"seed-{args.seed}.pt"
-        train_offline(dataset, output, config["offline"], seed=args.seed, resume=args.resume)
+        train_offline(dataset, output, config["offline"], method=args.method, seed=args.seed, resume=args.resume)
