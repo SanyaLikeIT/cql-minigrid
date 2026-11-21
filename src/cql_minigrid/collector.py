@@ -14,6 +14,10 @@ from .env import make_env, observation_spec
 from .rollout import ppo_policy, random_policy, run_episodes, summarize
 from .shaping import CollectorReward
 
+TRANSITION_FIELDS = ['observation', 'action', 'reward', 'next_observation',
+                     'terminated', 'truncated', 'episode_id', 'source', 'seed',
+                     'policy_seed', 'elapsed_steps', 'next_elapsed_steps']
+
 
 def save_ppo(model, path):
     path = Path(path)
@@ -123,8 +127,7 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
         raise ValueError("Mixture weights must be nonnegative and sum to one")
     env = make_env()
     while manifest["transitions"] < target:
-        rows = {key: [] for key in ["observation", "action", "reward", "next_observation",
-                                   "terminated", "truncated", "episode_id", "source", "seed", "policy_seed"]}
+        rows = {key: [] for key in TRANSITION_FIELDS}
         episode_records = []
         for _ in range(shard_episodes):
             eid = len(manifest["episodes"]) + len(episode_records)
@@ -134,9 +137,11 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
             obs, _ = env.reset(seed=seed)
             total = 0.0
             for step in range(1, 257):
+                elapsed_steps = env.elapsed_steps
                 action = policies[name](obs, rng)
                 next_obs, reward, terminated, truncated, info = env.step(action)
-                values = [obs, action, reward, next_obs, terminated, truncated, eid, name, seed, policy_seed]
+                values = [obs, action, reward, next_obs, terminated, truncated, eid, name, seed,
+                          policy_seed, elapsed_steps, info['elapsed_steps']]
                 for key, value in zip(rows, values, strict=True):
                     rows[key].append(value)
                 obs = next_obs
@@ -152,6 +157,8 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
         part_path = parts / f"part-{index:05d}.npz"
         arrays = {key: np.asarray(value) for key, value in rows.items()}
         arrays["reward"] = arrays["reward"].astype(np.float32)
+        for key in ['elapsed_steps', 'next_elapsed_steps']:
+            arrays[key] = arrays[key].astype(np.int32)
         save_npz(part_path, arrays)
         manifest["parts"].append({"file": part_path.name, "sha256": sha256(part_path)})
         manifest["episodes"].extend(episode_records)
@@ -165,14 +172,22 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
         if previous["sha256"] != sha256(path):
             raise ValueError("Completed dataset checksum mismatch")
     else:
-        shards = []
+        shard_paths = []
         for part in manifest["parts"]:
             part_path = parts / part["file"]
             if sha256(part_path) != part["sha256"]:
                 raise ValueError("Dataset shard checksum mismatch")
-            with np.load(part_path, allow_pickle=False) as data:
-                shards.append({key: data[key] for key in data.files})
-        save_npz(path, {key: np.concatenate([part[key] for part in shards]) for key in shards[0]})
+            shard_paths.append(part_path)
+        merged = {}
+        # Assemble one field at a time: 200k full-grid transitions are large.
+        for key in TRANSITION_FIELDS:
+            chunks = []
+            for part_path in shard_paths:
+                with np.load(part_path, allow_pickle=False) as data:
+                    chunks.append(data[key])
+            merged[key] = np.concatenate(chunks)
+            del chunks
+        save_npz(path, merged)
     sources = {}
     for name in names:
         records = [e for e in manifest["episodes"] if e["source"] == name]
@@ -180,6 +195,7 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
             sources[name] = {**summarize(records), "transitions": sum(e["steps"] for e in records)}
     metadata = {**identity, "sha256": sha256(path), "transitions": manifest["transitions"],
                 "episodes": len(manifest["episodes"]), "sources": sources,
+                "recorded_fields": TRANSITION_FIELDS,
                 "source_audit": source_audit, "episode_records": manifest["episodes"]}
     write_json(path.with_suffix(".json"), metadata)
     return metadata

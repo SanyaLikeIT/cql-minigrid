@@ -16,7 +16,7 @@
     "step_cost": 0.005
   },
   "datasets": {
-    "transitions": 50000,
+    "transitions": 200000,
     "minimum_collector_success": 0.6,
     "mixtures": {
       "strong": {

@@ -30,4 +30,16 @@ def load_dataset(path):
         raise ValueError("Invalid recorded action")
     if any(arrays[key].dtype != np.bool_ for key in ["terminated", "truncated"]):
         raise ValueError("Ending flags must be Boolean")
+    component = observation_spec()['components']['elapsed_steps']
+    for key, observation in [('elapsed_steps', 'observation'), ('next_elapsed_steps', 'next_observation')]:
+        inferred = np.rint(arrays[observation][:, component['index']] * component['normalizer']).astype(np.int32)
+        if key not in arrays:
+            arrays[key] = inferred  # Read legacy pilot counters without changing its NPZ.
+        recorded = arrays[key]
+        if (not np.issubdtype(recorded.dtype, np.integer) or recorded.shape != (n,)
+                or not np.array_equal(recorded, inferred) or np.any(recorded < 0)
+                or np.any(recorded > 256)):
+            raise ValueError(f'Invalid {key} counter')
+    if not np.all(arrays['next_elapsed_steps'] == arrays['elapsed_steps'] + 1):
+        raise ValueError('elapsed_steps must increase by one per transition')
     return arrays, metadata

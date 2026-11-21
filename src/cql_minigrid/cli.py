@@ -9,7 +9,7 @@ def main():
     parser = argparse.ArgumentParser(description="Team 12 offline MiniGrid experiments")
     parser.add_argument("command", choices=["doctor", "env-smoke", "ppo", "collect", "train", "evaluate", "replay", "experiments", "pipeline"])
     parser.add_argument("--config", default="configs/main.json")
-    parser.add_argument("--root", default="artifacts/main")
+    parser.add_argument("--root", default="artifacts/final")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--transitions", type=int)
     parser.add_argument("--dataset")
