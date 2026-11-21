@@ -38,6 +38,20 @@ def dqn_loss(q_values, action, target):
     return F.smooth_l1_loss(q_values.gather(1, action[:, None]).squeeze(1), target)
 
 
+def conservative_penalty(q_values, action):
+    recorded = q_values.gather(1, action[:, None]).squeeze(1)
+    return (torch.logsumexp(q_values, dim=1) - recorded).mean()
+
+
+def q_learning_loss(q_values, action, target, alpha):
+    if alpha < 0:
+        raise ValueError('CQL alpha must be nonnegative')
+    td = dqn_loss(q_values, action, target)
+    penalty = conservative_penalty(q_values, action)
+    total = td if alpha == 0 else td + alpha * penalty
+    return total, td, penalty
+
+
 def save_checkpoint(path, checkpoint):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -46,11 +60,13 @@ def save_checkpoint(path, checkpoint):
     os.replace(temporary, path)
 
 
-def train_offline(dataset, output, config, *, seed=0, resume=False, stop_after=None):
+def train_offline(dataset, output, config, *, method='dqn', seed=0, resume=False, stop_after=None):
+    if method not in ['dqn', 'cql']:
+        raise ValueError('Unknown offline method')
     seed_everything(seed)
     data, metadata = load_dataset(dataset)
     output = Path(output)
-    identity = {'method': 'dqn', 'seed': seed, 'config': config, 'dataset_sha256': metadata['sha256']}
+    identity = {'method': method, 'seed': seed, 'config': config, 'dataset_sha256': metadata['sha256']}
     rng = np.random.default_rng(seed)
     model = ActionNetwork(data['observation'].shape[1], config['hidden'])
     target_model = ActionNetwork(data['observation'].shape[1], config['hidden'])
@@ -83,7 +99,8 @@ def train_offline(dataset, output, config, *, seed=0, resume=False, stop_after=N
             next_values = target_model(batch['next_observation']).max(dim=1).values
             target = td_targets(batch['reward'], next_values, batch['terminated'], batch['truncated'],
                                 config['gamma'], config['bootstrap_on_truncation'])
-        loss = dqn_loss(q, batch['action'], target)
+        alpha = config['alpha'] if method == 'cql' else 0.0
+        loss, td, penalty = q_learning_loss(q, batch['action'], target, alpha)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 10.0)
@@ -91,7 +108,8 @@ def train_offline(dataset, output, config, *, seed=0, resume=False, stop_after=N
         if update % config['target_interval'] == 0:
             target_model.load_state_dict(model.state_dict())
         if update == 1 or update % config['log_interval'] == 0 or update == end:
-            history.append({'update': update, 'loss': float(loss.detach()), 'q_mean': float(q.detach().mean())})
+            history.append({'update': update, 'loss': float(loss.detach()), 'q_mean': float(q.detach().mean()),
+                            'td_loss': float(td.detach()), 'conservative_penalty': float(penalty.detach())})
         if update % config['checkpoint_interval'] == 0 or update == end:
             checkpoint = {'identity': identity, 'model': model.state_dict(),
                           'target_model': target_model.state_dict(), 'optimizer': optimizer.state_dict(),
