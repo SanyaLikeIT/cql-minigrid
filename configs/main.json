@@ -1,0 +1,25 @@
+{
+  "seeds_file": "configs/seeds.json",
+  "ppo": {
+    "seed": 12,
+    "total_timesteps": 400000,
+    "early_timesteps": 10000,
+    "checkpoint_interval": 32768,
+    "n_envs": 8,
+    "n_steps": 256,
+    "batch_size": 256,
+    "n_epochs": 4,
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "ent_coef": 0.01,
+    "shaping_scale": 0.5
+  },
+  "datasets": {
+    "transitions": 50000,
+    "minimum_collector_success": 0.6,
+    "mixtures": {
+      "strong": {"strong": 1.0},
+      "mixed": {"strong": 0.5, "early": 0.25, "random": 0.25}
+    }
+  }
+}

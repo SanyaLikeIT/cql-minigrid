@@ -1,0 +1,8 @@
+{
+  "ppo": 12,
+  "collection_rng": 120,
+  "collection_episode_start": 1000000,
+  "validation": [10000, 10001, 10002],
+  "evaluation": [20000, 20001, 20002],
+  "offline_training": [0]
+}
