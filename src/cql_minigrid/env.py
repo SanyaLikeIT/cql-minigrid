@@ -19,14 +19,22 @@ class Navigation(gym.ObservationWrapper):
         self.action_space = spaces.Discrete(3)
         self.eye = np.eye(self.n_objects, dtype=np.float32)
 
+    @property
+    def elapsed_steps(self):
+        return int(self.unwrapped.step_count)
+
+    def reset(self, **kwargs):
+        obs, info = super().reset(**kwargs)
+        return obs, {**info, 'elapsed_steps': self.elapsed_steps}
+
     def observation(self, obs):
         image = obs['image']
         cells = np.concatenate((self.eye[image[..., 0]],
                                 image[..., 1:2].astype(np.float32) / 5.0,
                                 image[..., 2:3].astype(np.float32) / 3.0), axis=-1)
         direction = np.eye(4, dtype=np.float32)[self.unwrapped.agent_dir]
-        elapsed = np.array([self.unwrapped.step_count / self.unwrapped.max_steps], np.float32)
-        return np.concatenate((cells.ravel(), direction, elapsed)).astype(np.float32)
+        elapsed_steps = np.array([self.elapsed_steps / self.unwrapped.max_steps], np.float32)
+        return np.concatenate((cells.ravel(), direction, elapsed_steps)).astype(np.float32)
 
     def step(self, action):
         if not self.action_space.contains(action):
@@ -41,7 +49,8 @@ class Navigation(gym.ObservationWrapper):
             outcome = 'timeout'
         elif terminated:
             raise RuntimeError('Unclassified terminal transition')
-        return self.observation(obs), reward, terminated, truncated, {**info, 'outcome': outcome}
+        return self.observation(obs), reward, terminated, truncated, {
+            **info, 'outcome': outcome, 'elapsed_steps': self.elapsed_steps}
 
 
 def make_env(*, max_steps=256, render_mode=None, **kwargs):
@@ -52,5 +61,18 @@ def observation_spec():
     result = {'env_id': ENV_ID, 'version': OBSERVATION_VERSION,
               'shape': [8 * 8 * (len(OBJECT_TO_IDX) + 2) + 5], 'max_steps': 256,
               'actions': ['left', 'right', 'forward'],
-              'encoding': 'object one-hot, color/5, state/3, direction one-hot, elapsed/max_steps'}
+              'encoding': 'object one-hot, color/5, state/3, direction one-hot, elapsed/max_steps',
+              'components': {
+                  'grid': {'start': 0, 'stop': 832, 'shape': [8, 8, 13]},
+                  'direction': {'start': 832, 'stop': 836, 'encoding': 'one-hot'},
+                  'elapsed_steps': {'index': 836, 'raw_dtype': 'int32', 'raw_range': [0, 256],
+                                    'encoded_dtype': 'float32', 'normalizer': 256}}}
     return result
+
+
+def compatible_observation_spec(saved):
+    """The original pilot already encoded elapsed_steps / 256 at index 836."""
+    current = observation_spec()
+    core = ['env_id', 'version', 'shape', 'max_steps', 'actions', 'encoding']
+    return (all(saved.get(key) == current[key] for key in core)
+            and ('components' not in saved or saved['components'] == current['components']))

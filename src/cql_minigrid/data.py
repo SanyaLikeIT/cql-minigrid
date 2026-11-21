@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from .common import sha256
-from .env import observation_spec
+from .env import compatible_observation_spec, observation_spec
 
 
 def load_dataset(path):
@@ -12,7 +12,7 @@ def load_dataset(path):
     metadata = json.loads(path.with_suffix(".json").read_text())
     if metadata["sha256"] != sha256(path):
         raise ValueError("Dataset checksum mismatch")
-    if metadata["observation"] != observation_spec():
+    if not compatible_observation_spec(metadata["observation"]):
         raise ValueError("Dataset observation interface differs")
     with np.load(path, allow_pickle=False) as saved:
         arrays = {key: saved[key] for key in saved.files}

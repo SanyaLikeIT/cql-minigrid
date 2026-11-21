@@ -10,5 +10,31 @@
     "right",
     "forward"
   ],
-  "encoding": "object one-hot, color/5, state/3, direction one-hot, elapsed/max_steps"
+  "encoding": "object one-hot, color/5, state/3, direction one-hot, elapsed/max_steps",
+  "components": {
+    "grid": {
+      "start": 0,
+      "stop": 832,
+      "shape": [
+        8,
+        8,
+        13
+      ]
+    },
+    "direction": {
+      "start": 832,
+      "stop": 836,
+      "encoding": "one-hot"
+    },
+    "elapsed_steps": {
+      "index": 836,
+      "raw_dtype": "int32",
+      "raw_range": [
+        0,
+        256
+      ],
+      "encoded_dtype": "float32",
+      "normalizer": 256
+    }
+  }
 }
