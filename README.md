@@ -19,3 +19,15 @@ python3.12 -m venv .venv
 
 Datasets, weights, and full logs belong under the ignored `artifacts/` directory.
 GitHub Actions runs short CPU checks. Full experiments run locally.
+
+The environment uses its original rewards and 256-step limit. Every policy
+receives the full symbolic grid (object one-hot, color, state), direction,
+and elapsed time, as specified in `configs/observation.json`. Actions are
+left, right, and forward. Success has positive terminal reward; collision
+has reward -1 and includes a forward move blocked by a wall. A time limit
+is recorded separately as `truncated`. If both flags are set, the terminal
+success or collision takes precedence over timeout in outcome counts.
+
+`configs/seeds.json` separates PPO, data collection, validation, and final
+evaluation seeds. Offline training seeds initialize the networks and batch
+samplers; all final policies use the same reserved evaluation seeds.
