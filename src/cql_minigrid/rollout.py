@@ -38,6 +38,7 @@ def run_episodes(policy, seeds, *, max_steps=256):
             total += float(reward)
             if terminated or truncated:
                 episodes.append({"seed": int(seed), "steps": step, "return": total,
+                                 "elapsed_steps": info["elapsed_steps"],
                                  "outcome": info["outcome"], "terminated": bool(terminated),
                                  "truncated": bool(truncated)})
                 break

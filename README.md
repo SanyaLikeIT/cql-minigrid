@@ -128,6 +128,14 @@ loading old pilot files derives these counters without rewriting them.
 
 ## Reproduce
 
+The final report includes success, collision, timeout, return, and mean steps
+on successful episodes. PPO collector references use the same test seeds.
+Gameplay is exported as H.264/yuv420p MP4 and GIF with separate metadata.
+
+```sh
+.venv/bin/python -m cql_minigrid replay --method ppo --format mp4 --output artifacts/final/replays/ppo-collector.mp4
+```
+
 Run the entire main pipeline, including collector training if absent:
 
 ```sh

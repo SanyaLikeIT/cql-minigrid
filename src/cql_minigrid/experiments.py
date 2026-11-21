@@ -11,9 +11,27 @@ import time
 
 from .collector import collect, train_ppo
 from .common import sha256, write_json
-from .evaluation import evaluate, export_gif, load_policy
+from .evaluation import EVALUATION_VERSION, REPLAY_VERSION, evaluate, export_replay, load_policy
 from .offline import train_offline
 from .reporting import aggregate, write_reports
+
+
+def export_checkpoint_replays(root, name, method, checkpoint, seed, extra):
+    checkpoint_hash = sha256(checkpoint)
+    policy = None
+    for kind in ['gif', 'mp4']:
+        path = Path(root) / 'replays' / f'{name}.{kind}'
+        sidecar = path.with_suffix(path.suffix + '.json')
+        old = json.loads(sidecar.read_text()) if sidecar.exists() else {}
+        valid = (path.exists() and old.get('checkpoint_sha256') == checkpoint_hash
+                 and old.get('seed') == seed and old.get('replay_version') == REPLAY_VERSION
+                 and old.get('file_sha256') == sha256(path))
+        if not valid:
+            if policy is None:
+                policy, _ = load_policy(method, checkpoint)
+            replay = export_replay(policy, path, seed)
+            write_json(sidecar, {**replay, 'checkpoint':str(checkpoint),
+                                'checkpoint_sha256':checkpoint_hash, 'method':method, **extra})
 
 
 def run_one(root, dataset, method, seed, config, evaluation_seeds, demo):
@@ -25,19 +43,14 @@ def run_one(root, dataset, method, seed, config, evaluation_seeds, demo):
     checkpoint_hash = sha256(checkpoint)
     previous = json.loads(report_path.read_text()) if report_path.exists() else None
     started = time.perf_counter()
-    if previous and previous['checkpoint_sha256'] == checkpoint_hash and previous['seeds'] == evaluation_seeds:
+    if (previous and previous['checkpoint_sha256'] == checkpoint_hash and previous['seeds'] == evaluation_seeds
+            and previous.get('evaluation_version') == EVALUATION_VERSION):
         report = previous
     else:
         report = evaluate(method, checkpoint, evaluation_seeds, report_path)
     if demo:
-        gif = root / 'replays' / f'{dataset}-{method}.gif'
-        gif_report = gif.with_suffix('.json')
-        old = json.loads(gif_report.read_text()) if gif_report.exists() else {}
-        if not gif.exists() or old.get('checkpoint_sha256') != checkpoint_hash:
-            policy, _ = load_policy(method, checkpoint)
-            replay = export_gif(policy, gif, evaluation_seeds[0])
-            write_json(gif_report, {**replay, 'checkpoint_sha256': checkpoint_hash,
-                                    'method': method, 'dataset': dataset, 'training_seed': seed})
+        export_checkpoint_replays(root, f'{dataset}-{method}', method, checkpoint, evaluation_seeds[0],
+                                  {'dataset':dataset, 'training_seed':seed})
     training = json.loads(checkpoint.with_suffix('.train.json').read_text())
     return {'dataset': dataset, 'method': method, 'seed': seed, 'metrics': report['summary'],
             'updates': training['updates'], 'training_seconds': training['seconds'],
@@ -51,7 +64,8 @@ def provenance():
     return {'python': platform.python_version(), 'platform': platform.platform(), 'device': 'cpu',
             'threads_per_training_worker': 1,
             'packages': {name: importlib.metadata.version(name) for name in
-                         ['torch','gymnasium','minigrid','stable-baselines3','numpy','matplotlib']},
+                         ['torch','gymnasium','minigrid','stable-baselines3','numpy','matplotlib',
+                          'imageio-ffmpeg','pillow']},
             'base_git_revision': subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
             'source_sha256': {str(path.relative_to(Path.cwd())): sha256(path)
                               for path in sorted(root.glob('*.py'))}}
@@ -71,6 +85,9 @@ def run_matrix(config, root, *, workers=1, reports=None):
     for name in config['datasets']['mixtures']:
         path = root / 'datasets' / f'{name}.npz'
         metadata = json.loads(path.with_suffix('.json').read_text())
+        target = config['datasets']['transitions']
+        if metadata['target'] != target or not target <= metadata['transitions'] < target + 256:
+            raise ValueError('Dataset transition budget differs from the experiment config')
         if sha256(path) != metadata['sha256']:
             raise ValueError('Frozen dataset checksum mismatch')
         if set(seeds['evaluation']) & {e['seed'] for e in metadata['episode_records']}:
@@ -88,34 +105,38 @@ def run_matrix(config, root, *, workers=1, reports=None):
     jobs = [(str(root), dataset, method, seed, config['offline'], seeds['evaluation'], seed == training_seeds[0])
             for dataset in datasets for method in ['dqn','cql','bc'] for seed in training_seeds]
     runs = []
+    def complete(run):
+        runs.append(run)
+        write_json(root/'matrix_progress.json', {'expected_runs':len(jobs), 'runs':runs,
+                   'session_seconds':time.perf_counter()-started})
+        print(json.dumps({'completed_runs':len(runs),'expected_runs':len(jobs),
+                          'dataset':run['dataset'],'method':run['method'],'seed':run['seed'],
+                          'success_rate':run['metrics']['success_rate']}),flush=True)
     if workers == 1:
         for job in jobs:
-            runs.append(run_one(*job))
-            write_json(root/'matrix_progress.json', {'expected_runs':len(jobs), 'runs':runs,
-                       'session_seconds':time.perf_counter()-started})
+            complete(run_one(*job))
     else:
         with ProcessPoolExecutor(max_workers=workers, mp_context=multiprocessing.get_context('spawn')) as pool:
-            futures = [pool.submit(run_one,*job) for job in jobs]
-            for future in as_completed(futures):
-                run = future.result(); runs.append(run)
-                write_json(root/'matrix_progress.json', {'expected_runs':len(jobs), 'runs':runs,
-                           'session_seconds':time.perf_counter()-started})
-                print(json.dumps({'completed_runs':len(runs),'expected_runs':len(jobs),
-                                  'dataset':run['dataset'],'method':run['method'],'seed':run['seed'],
-                                  'success_rate':run['metrics']['success_rate']}),flush=True)
+            for future in as_completed([pool.submit(run_one,*job) for job in jobs]):
+                complete(future.result())
     runs.sort(key=lambda r:(r['dataset'],r['method'],r['seed']))
     references = {}
     for source, method, checkpoint in [('final','ppo',root/'ppo/final.zip'),
                                        ('early','ppo',root/'ppo/early.zip'), ('random','random',None)]:
         result = evaluate(method,checkpoint,seeds['evaluation'],root/'references'/f'{source}.json')
         references[source] = result['summary']
+    export_checkpoint_replays(root,'ppo-collector','ppo',root/'ppo/final.zip',seeds['evaluation'][0],
+                              {'dataset':None,'training_seed':config['ppo']['seed']})
     source_audit = json.loads((root/'source_audit.json').read_text())
     validation_sources = {name: {'training_timesteps':source['training_timesteps'],
                                 **source['summary']} for name,source in source_audit['sources'].items()}
     result = {'completed_at_utc':datetime.now(timezone.utc).isoformat(), 'config':config, 'seeds':seeds,
-              'workers':workers, 'datasets':datasets, 'references':references, 'runs':runs,
+              'workers':workers, 'dataset_target':config['datasets']['transitions'],
+              'requirements':{'source':'docs/Presentation.pdf','sha256':sha256('docs/Presentation.pdf')},
+              'datasets':datasets, 'references':references, 'runs':runs,
               'aggregate':aggregate(runs), 'matrix_session_seconds':time.perf_counter()-started,
               'validation_sources':validation_sources,
+              'collection':json.loads((root/'collection_timing.json').read_text()) if (root/'collection_timing.json').exists() else None,
               'ppo':json.loads((root/'ppo/progress.json').read_text()), 'provenance':provenance()}
     write_json(root/'results.json',result)
     if reports:

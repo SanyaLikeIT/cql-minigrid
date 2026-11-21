@@ -19,6 +19,7 @@ def main():
     parser.add_argument("--checkpoint")
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--reports")
+    parser.add_argument("--format", choices=["gif", "mp4"])
     args = parser.parse_args()
     os.environ.setdefault("MPLCONFIGDIR", str(Path(args.root).resolve() / ".matplotlib"))
     if args.command == "doctor":
@@ -63,8 +64,8 @@ def main():
         output = Path(args.output) if args.output else Path(args.root) / "runs" / dataset.stem / args.method / f"seed-{args.seed}.pt"
         train_offline(dataset, output, config["offline"], method=args.method, seed=args.seed, resume=args.resume)
     elif args.command in ["evaluate", "replay"]:
-        from .evaluation import evaluate, export_gif, load_policy
-        from .common import seed_everything
+        from .evaluation import evaluate, export_replay, load_policy
+        from .common import seed_everything, sha256, write_json
         seed_everything(0)
         config = json.loads(Path(args.config).read_text())
         seeds = json.loads(Path(config["seeds_file"]).read_text())["evaluation"]
@@ -76,9 +77,17 @@ def main():
             report = evaluate(args.method, checkpoint, seeds, output)
             print(json.dumps(report["summary"], indent=2))
         else:
-            output = args.output or Path(args.root) / "replays" / f"{args.method}-seed-{args.seed}.gif"
-            policy, _ = load_policy(args.method, checkpoint)
-            print(json.dumps(export_gif(policy, output, seeds[0]), indent=2))
+            kind = args.format or (Path(args.output).suffix.lower().lstrip('.') if args.output else 'mp4')
+            if kind not in ['gif', 'mp4'] or (args.output and Path(args.output).suffix.lower() != '.' + kind):
+                parser.error('replay output extension must match --format gif/mp4')
+            output = args.output or Path(args.root) / "replays" / f"{args.method}-seed-{args.seed}.{kind}"
+            policy, identity = load_policy(args.method, checkpoint)
+            replay = export_replay(policy, output, seeds[0])
+            replay.update(policy=identity, checkpoint=str(checkpoint) if checkpoint else None,
+                          checkpoint_sha256=sha256(checkpoint) if checkpoint else None)
+            path = Path(output)
+            write_json(path.with_suffix(path.suffix + '.json'), replay)
+            print(json.dumps(replay, indent=2))
     elif args.command in ["experiments", "pipeline"]:
         from .experiments import pipeline, run_matrix
         config = json.loads(Path(args.config).read_text())
