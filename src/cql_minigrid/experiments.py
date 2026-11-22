@@ -10,7 +10,7 @@ import subprocess
 import time
 
 from .collector import collect, train_ppo
-from .common import sha256, write_json
+from .common import resource_path, sha256, write_json
 from .evaluation import EVALUATION_VERSION, REPLAY_VERSION, evaluate, export_replay, load_policy
 from .offline import train_offline
 from .reporting import aggregate, write_reports
@@ -74,8 +74,10 @@ def provenance():
                 state = 'dirty' if git('status', '--porcelain', '--untracked-files=all') else 'clean'
                 reason = None
         except FileNotFoundError:
+            revision = None
             reason = 'git_missing'
         except (OSError, subprocess.SubprocessError):
+            revision = None
             reason = 'git_unavailable'
     return {'python': platform.python_version(), 'platform': platform.platform(), 'device': 'cpu',
             'threads_per_training_worker': 1,
@@ -87,12 +89,12 @@ def provenance():
                               for path in sorted(root.glob('*.py'))}}
 
 
-def run_matrix(config, root, *, workers=1, reports=None):
+def run_matrix(config, root, *, workers=1, reports=None, config_path=None):
     if workers < 1:
         raise ValueError('workers must be positive')
     started = time.perf_counter()
     root = Path(root)
-    seeds = json.loads(Path(config['seeds_file']).read_text())
+    seeds = json.loads(resource_path(config['seeds_file'], config_path).read_text())
     if set(seeds['validation']) & set(seeds['evaluation']):
         raise ValueError('Validation and evaluation seeds overlap')
     if set(range(config['ppo']['seed'], config['ppo']['seed'] + config['ppo']['n_envs'])) & set(seeds['evaluation']):
@@ -148,7 +150,7 @@ def run_matrix(config, root, *, workers=1, reports=None):
                                 **source['summary']} for name,source in source_audit['sources'].items()}
     result = {'completed_at_utc':datetime.now(timezone.utc).isoformat(), 'config':config, 'seeds':seeds,
               'workers':workers, 'dataset_target':config['datasets']['transitions'],
-              'requirements':{'source':'docs/Presentation.pdf','sha256':sha256('docs/Presentation.pdf')},
+              'requirements':{'source':'docs/Presentation.pdf','sha256':sha256(resource_path('docs/Presentation.pdf',config_path))},
               'datasets':datasets, 'references':references, 'runs':runs,
               'aggregate':aggregate(runs), 'matrix_session_seconds':time.perf_counter()-started,
               'validation_sources':validation_sources,
@@ -160,12 +162,13 @@ def run_matrix(config, root, *, workers=1, reports=None):
     return result
 
 
-def pipeline(config, root, *, workers=1, reports=None):
+def pipeline(config, root, *, workers=1, reports=None, config_path=None):
     started = time.perf_counter()
     root = Path(root)
-    train_ppo(config['ppo'],root/'ppo',resume=(root/'ppo/latest.zip').exists())
-    collect(config,root)
-    result = run_matrix(config,root,workers=workers,reports=reports)
+    resume = (root/'ppo/latest.zip').exists() or (root/'ppo/progress.json').exists()
+    train_ppo(config['ppo'],root/'ppo',resume=resume)
+    collect(config,root,config_path=config_path)
+    result = run_matrix(config,root,workers=workers,reports=reports,config_path=config_path)
     write_json(root/'pipeline_timing.json', {'seconds':time.perf_counter()-started,
                'runs':len(result['runs']), 'root':str(root)})
     return result

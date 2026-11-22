@@ -7,20 +7,20 @@ from pathlib import Path
 import shutil
 import time
 
-from .common import sha256, write_json
+from .common import resource_path, sha256, write_json
 from .evaluation import evaluate
 from .experiments import provenance, run_one
 from .reporting import METRICS, aggregate
 
 
-def validate_study(config):
+def validate_study(config, *, config_path=None):
     study = config['study']
     alphas = study['alphas']
     if (not alphas or any(not isinstance(a, (float, int)) or isinstance(a, bool)
                           or not math.isfinite(a) or a < 0 for a in alphas)
             or len(set(alphas)) != len(alphas)):
         raise ValueError('Study alphas must be finite, nonnegative, nonempty, and unique')
-    seeds = json.loads(Path(config['seeds_file']).read_text())
+    seeds = json.loads(resource_path(config['seeds_file'], config_path).read_text())
     training, evaluation = seeds['offline_training'], seeds['evaluation']
     if not training or len(training) != len(set(training)):
         raise ValueError('Training seeds must be nonempty and unique')
@@ -35,7 +35,7 @@ def validate_study(config):
     for name, filename in study['datasets'].items():
         if Path(name).name != name or name in ['.', '..']:
             raise ValueError('Dataset names must be single path components')
-        path = Path(filename)
+        path = resource_path(filename, config_path)
         metadata = json.loads(path.with_suffix('.json').read_text())
         target = config['datasets']['transitions']
         if metadata['target'] != target or not target <= metadata['transitions'] < target + 256:
@@ -50,9 +50,9 @@ def validate_study(config):
     return seeds, datasets
 
 
-def run_ablation(config, root, *, reports=None):
+def run_ablation(config, root, *, reports=None, config_path=None):
     started = time.perf_counter()
-    seeds, datasets = validate_study(config)
+    seeds, datasets = validate_study(config,config_path=config_path)
     root = Path(root)
     source = provenance()
     identity = {'config': config, 'seeds': seeds, 'dataset_sha256':{d:m['sha256'] for d,m in datasets.items()},
@@ -85,8 +85,9 @@ def run_ablation(config, root, *, reports=None):
         print(json.dumps({'completed_runs':len(runs),'expected_runs':len(jobs),'dataset':dataset,
                           'method':method,'alpha':alpha,'seed':seed,'success_rate':run['metrics']['success_rate']}),flush=True)
     references = {}
-    for name, method, checkpoint in [('final','ppo',Path(config['study']['ppo_root'])/'final.zip'),
-                                      ('early','ppo',Path(config['study']['ppo_root'])/'early.zip'),
+    ppo_root=resource_path(config['study']['ppo_root'],config_path)
+    for name, method, checkpoint in [('final','ppo',ppo_root/'final.zip'),
+                                      ('early','ppo',ppo_root/'early.zip'),
                                       ('random','random',None)]:
         references[name] = evaluate(method,checkpoint,seeds['evaluation'],root/'references'/f'{name}.json')['summary']
     result = {'completed_at_utc':datetime.now(timezone.utc).isoformat(),'config':config,'seeds':seeds,

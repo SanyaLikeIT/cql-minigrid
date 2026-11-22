@@ -97,3 +97,21 @@ def test_transition_quotas_mix_different_episode_lengths_and_resume(tmp_path, mo
     assert episode['sources']['long']['transitions']/episode['transitions'] > .85
     with pytest.raises(ValueError,match='changed'):
         collect_dataset(tmp_path/'quota.npz', **kwargs, sampling_unit='episodes')
+
+
+def test_frozen_dataset_without_shards_is_not_recollected(tmp_path, monkeypatch):
+    import shutil
+    from cql_minigrid import collector
+    path=tmp_path/'frozen.npz'
+    kwargs=dict(policies={'random':random_policy},weights={'random':1.},target=16,
+                episode_seed_start=1000000,policy_seed_start=120,source_hashes={},source_audit={})
+    original=collect_dataset(path,**kwargs)
+    before=(path.read_bytes(),path.with_suffix('.json').read_bytes())
+    shutil.rmtree(path.with_suffix('.parts'))
+    def forbidden():raise AssertionError('A complete frozen file must not collect new data')
+    monkeypatch.setattr(collector,'make_env',forbidden)
+    assert collect_dataset(path,**kwargs)==original
+    assert before==(path.read_bytes(),path.with_suffix('.json').read_bytes())
+    assert not path.with_suffix('.parts').exists()
+    with pytest.raises(ValueError,match='changed'):
+        collect_dataset(path,**{**kwargs,'target':32})
