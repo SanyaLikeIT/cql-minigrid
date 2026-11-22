@@ -24,3 +24,18 @@ jobs:
       - run: python -m cql_minigrid doctor
       - run: python -m cql_minigrid env-smoke
       - run: python -m cql_minigrid pipeline --config configs/smoke.json --root artifacts/ci --reports artifacts/ci/reports
+      - name: Run the small alpha study
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          config = json.loads(Path('configs/smoke.json').read_text())
+          config['study'] = {
+              'alphas': [0.0, 0.1, 1.0, 5.0],
+              'datasets': {'strong': 'artifacts/ci/datasets/strong.npz'},
+              'bc_datasets': ['strong'],
+              'ppo_root': 'artifacts/ci/ppo',
+          }
+          Path('artifacts/ci/ablation-config.json').write_text(json.dumps(config))
+          PY
+          python -m cql_minigrid ablation --config artifacts/ci/ablation-config.json --root artifacts/ci-alpha --reports artifacts/ci-alpha/reports
