@@ -141,8 +141,7 @@ not total wall time across both sessions. Update timers are cumulative per model
 
 All demonstrations use training seed 0 and test seed 20000. Sidecar JSON files
 record original episode length, outcome, reward, checkpoint hash, and encoded
-frames. The full workspace also retains GIFs of the same episodes. The Moodle package
-keeps the MP4 versions and their sidecars.
+frames. GIFs show the same episodes as MP4s.
 
 | Method | MP4 | Episode steps |
 |---|---|---:|

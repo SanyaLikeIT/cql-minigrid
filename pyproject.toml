@@ -15,7 +15,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest==9.1.1"]
-notebook = ["nbformat==5.11.1", "nbclient==0.10.4", "ipykernel==7.4.0"]
 
 [project.scripts]
 cql-minigrid = "cql_minigrid.cli:main"
