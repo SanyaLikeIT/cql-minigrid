@@ -1,0 +1,58 @@
+{
+  "python": "3.12.15",
+  "platform": "Linux-7.3.4-arch1-2-x86_64-with-glibc2.44",
+  "cpu_model": "12th Gen Intel(R) Core(TM) i7-12650H",
+  "logical_cpus": 16,
+  "training_device": "cpu",
+  "threads_per_worker": 1,
+  "torch_build": "2.14.1+cu130",
+  "cuda_available": false,
+  "training_workers": 1,
+  "collection_seconds": 77.49146700900019,
+  "resumed_session_seconds": 227.79916392199812,
+  "cumulative_update_seconds": 624.0284199470152,
+  "session_history": {
+    "interrupted_completed_runs": 29,
+    "interrupted_seconds_to_last_completed_run": 550.2965304050012,
+    "interrupted_progress": "artifacts/ablation/sessions/interrupted-study_progress.json",
+    "resume_started_at_utc": "2026-11-22T17:16:25.623876+00:00",
+    "note": "The previous process stopped after 29 complete jobs and 1000 updates of job 30. Final session_seconds measures the resumed invocation, including cached-job validation; it is not total wall time for both invocations."
+  },
+  "small_alpha_smoke_seconds": 4.48990659500123,
+  "zip_full_pipeline_seconds": 10.984458913000708,
+  "provenance": {
+    "python": "3.12.15",
+    "platform": "Linux-7.3.4-arch1-2-x86_64-with-glibc2.44",
+    "device": "cpu",
+    "threads_per_training_worker": 1,
+    "packages": {
+      "torch": "2.14.1",
+      "gymnasium": "1.4.0",
+      "minigrid": "3.2.0",
+      "stable-baselines3": "2.9.0",
+      "numpy": "2.5.4",
+      "matplotlib": "3.11.2",
+      "imageio-ffmpeg": "0.6.0",
+      "pillow": "12.3.0"
+    },
+    "base_git_revision": "b1a081f44fdd3a30098bf7c39215c6362b9846b9",
+    "git_status": "dirty",
+    "git_unavailable_reason": null,
+    "source_sha256": {
+      "src/cql_minigrid/__init__.py": "7bfa1e1a854e02e24326da96ceeb241d74011f579e88c4aece3d70d011910f21",
+      "src/cql_minigrid/__main__.py": "3129adff95e0f38b87ab34cddfc27082c7892bcaec267ff5d40f160fdf55b44a",
+      "src/cql_minigrid/ablation.py": "71e24e46b768e1b518d67e44501adef84f3c38faf2bea2ceb2d80e2d551cac8a",
+      "src/cql_minigrid/cli.py": "da7a4e6da09887cae9871807c669098ce14cf6b5cf17307c27fba77e078cdbaa",
+      "src/cql_minigrid/collector.py": "23b5909f5a9917b4a7eb2fcfaaab0a13f2564cf315deb2c75a94f816eccb189f",
+      "src/cql_minigrid/common.py": "1362984440c222bffb58991eef2d328c89d1012072e615cfa2cba2c71d865604",
+      "src/cql_minigrid/data.py": "524a16eab5ef8f5a32baa15fffbc52acbc05e6c15fec1ac2eee0889eb6a89687",
+      "src/cql_minigrid/env.py": "07868af41fc22d80926f63825f0ea4a4a4de63bcc1af637e369365d4c43dc0d7",
+      "src/cql_minigrid/evaluation.py": "dd645afd7f333bdbaf0acb09a9d5b96a4b5ca369a31948cb82d356baef491eb5",
+      "src/cql_minigrid/experiments.py": "6e64257cb3e2117cd0529f9f1d6c04b0a287588fb9334d9c0cdedde690d80f41",
+      "src/cql_minigrid/offline.py": "620676937ae2c0d1397cb6fddc885b29c93db0f34d0c33d71e19f5a04bb278fc",
+      "src/cql_minigrid/reporting.py": "de461d881b39f569565d73c4be07f84b8c933fd36a4850d339b014f07af76b17",
+      "src/cql_minigrid/rollout.py": "4b455c3bbed8f8ff8ad734f5964bceb008c9a29ecc7dfb40d05f83076c78983e",
+      "src/cql_minigrid/shaping.py": "a9d2e5f70bf7ea55c7dc7012de88a660bebce7a6b2f1a6875d551fccbdcb8ff1"
+    }
+  }
+}

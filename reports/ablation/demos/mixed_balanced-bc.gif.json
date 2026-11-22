@@ -1,0 +1,29 @@
+{
+  "replay_version": "gif-mp4-v1",
+  "seed": 20000,
+  "steps": 3,
+  "elapsed_steps": 3,
+  "return": -1.0,
+  "outcome": "collision",
+  "terminated": true,
+  "truncated": false,
+  "format": "gif",
+  "fps": 8,
+  "frame_indices": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "sampled_frames": 4,
+  "encoded_frames": 4,
+  "duration_seconds": 0.48,
+  "file_sha256": "0fe572aa2026a5b99d4cf2d7cb510675b669c95e03903a185c915f871f44587e",
+  "gif_sha256": "0fe572aa2026a5b99d4cf2d7cb510675b669c95e03903a185c915f871f44587e",
+  "checkpoint": "artifacts/ablation/runs/mixed_balanced/bc/seed-0.pt",
+  "checkpoint_sha256": "a8eb91975f0674263efe73cd2f8c7b840f03b40291bebaf3408f5ee13f8a78c8",
+  "method": "bc",
+  "dataset": "mixed_balanced",
+  "training_seed": 0,
+  "alpha": null
+}

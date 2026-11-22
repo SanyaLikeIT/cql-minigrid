@@ -1,0 +1,32 @@
+{
+  "replay_version": "gif-mp4-v1",
+  "seed": 20000,
+  "steps": 3,
+  "elapsed_steps": 3,
+  "return": -1.0,
+  "outcome": "collision",
+  "terminated": true,
+  "truncated": false,
+  "format": "mp4",
+  "fps": 8,
+  "frame_indices": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "sampled_frames": 4,
+  "encoded_frames": 4,
+  "duration_seconds": 0.5,
+  "file_sha256": "c9ec26e8cdc8dc645f63b7a775bc3d4bcec9f0621c2d02203daf650f94d18963",
+  "mp4_sha256": "c9ec26e8cdc8dc645f63b7a775bc3d4bcec9f0621c2d02203daf650f94d18963",
+  "codec": "h264",
+  "pixel_format": "yuv420p",
+  "ffmpeg_version": "7.0.2-static",
+  "checkpoint": "artifacts/ablation/runs/mixed_balanced/cql-alpha-1/seed-0.pt",
+  "checkpoint_sha256": "e84fb880b77368fab252d1a4387958c052227798a4a98b1b0c718ed2d7b98507",
+  "method": "cql",
+  "dataset": "mixed_balanced",
+  "training_seed": 0,
+  "alpha": 1.0
+}
