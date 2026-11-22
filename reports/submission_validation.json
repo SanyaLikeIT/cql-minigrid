@@ -1,0 +1,64 @@
+{
+  "syntax_validation": true,
+  "fresh_noneditable_install_from_extracted_zip": true,
+  "original_repository_not_on_import_path": true,
+  "git_executable_unavailable": true,
+  "git_metadata_absent": true,
+  "runtime_provenance_revision": null,
+  "isolated_pytest": {
+    "tests": 52,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "passed": 50
+  },
+  "fresh_kernel_notebook_code_cells": 9,
+  "notebook_numerical_assertions_passed": true,
+  "offline_checkpoints_loaded": 57,
+  "ppo_checkpoints_loaded": 2,
+  "evaluations": [
+    {
+      "method": "cql",
+      "episodes": 100,
+      "matches_saved_metrics": true
+    },
+    {
+      "method": "dqn",
+      "episodes": 100,
+      "matches_saved_metrics": true
+    },
+    {
+      "method": "bc",
+      "episodes": 100,
+      "matches_saved_metrics": true
+    }
+  ],
+  "draft_rebuild_identical_bytes": true,
+  "final_mode_rejected_missing_media": true,
+  "no_final_archive_created": true,
+  "local_pytest": {
+    "passed": 52,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "original_artifacts_verified_byte_identical": 527,
+  "preserved_existing_experiment_results": true,
+  "no_full_training_performed": true,
+  "final_media_status": "Not supplied by the author; no final presentation, final demo, or final submission ZIP was generated.",
+  "validation_environment": {
+    "python": "3.12.15",
+    "torch_build": "2.14.1+cpu",
+    "cuda_available": false,
+    "packages": {
+      "gymnasium": "1.4.0",
+      "minigrid": "3.2.0",
+      "numpy": "2.5.4",
+      "stable-baselines3": "2.9.0",
+      "nbformat": "5.11.1",
+      "nbclient": "0.10.4",
+      "ipykernel": "7.4.0"
+    }
+  },
+  "previous_full_archive_artifact_report_files_verified_byte_identical": 997
+}

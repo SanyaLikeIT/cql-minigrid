@@ -8,3 +8,6 @@ __pycache__/
 .ruff_cache/
 build/
 dist/
+.ipynb_checkpoints/
+submission/presentation/
+submission/demo/

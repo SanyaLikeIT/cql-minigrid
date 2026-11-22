@@ -9,7 +9,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from .common import seed_everything, sha256, write_json
+from .common import resource_path, seed_everything, sha256, write_json
 from .env import make_env, observation_spec
 from .rollout import ppo_policy, random_policy, run_episodes, summarize
 from .shaping import CollectorReward
@@ -35,7 +35,10 @@ def train_ppo(config, root, *, resume=False):
     previous = json.loads(progress_path.read_text()) if resume and progress_path.exists() else None
     if previous and previous["config"] != config:
         raise ValueError("PPO resume config differs from the saved config")
-    if not resume and (root / "latest.zip").exists():
+    if (previous and previous['timesteps'] >= config['total_timesteps']
+            and (root/'final.zip').exists() and (root/'early.zip').exists()):
+        return previous
+    if not resume and any((root / name).exists() for name in ['latest.zip','final.zip']):
         raise FileExistsError("PPO output exists; use --resume or another output directory")
     env = DummyVecEnv([lambda: Monitor(CollectorReward(make_env(),
         scale=config["shaping_scale"], step_cost=config["step_cost"])) for _ in range(config["n_envs"])])
@@ -116,7 +119,6 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
         raise ValueError('target and shard_episodes must be positive')
     path = Path(path)
     parts = path.with_suffix(".parts")
-    parts.mkdir(parents=True, exist_ok=True)
     manifest_path = parts / "progress.json"
     identity = {"weights": weights, "target": target, "episode_seed_start": episode_seed_start,
                 "policy_seed_start": policy_seed_start, "source_sha256": source_hashes,
@@ -124,6 +126,16 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
     # Keep the existing episode-sampled manifests compatible and unchanged.
     if sampling_unit != 'episodes':
         identity['sampling_unit'] = sampling_unit
+    if not manifest_path.exists() and (path.exists() or path.with_suffix('.json').exists()):
+        if not path.exists() or not path.with_suffix('.json').exists():
+            raise ValueError('Frozen dataset needs both NPZ and JSON metadata')
+        previous = json.loads(path.with_suffix('.json').read_text())
+        if any(previous.get(key) != value for key, value in identity.items()):
+            raise ValueError('Dataset configuration or source checkpoint changed')
+        if previous['sha256'] != sha256(path):
+            raise ValueError('Completed dataset checksum mismatch')
+        return previous
+    parts.mkdir(parents=True, exist_ok=True)
     manifest = {"identity": identity, "parts": [], "episodes": [], "transitions": 0}
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text())
@@ -217,11 +229,11 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
     return metadata
 
 
-def collect(config, root, *, target=None):
+def collect(config, root, *, target=None, config_path=None):
     seed_everything(config["ppo"]["seed"])
     root = Path(root)
     policies, hashes = load_sources(root / "ppo")
-    seeds = json.loads(Path(config["seeds_file"]).read_text())
+    seeds = json.loads(resource_path(config['seeds_file'], config_path).read_text())
     audit = audit_sources(policies, hashes, seeds["validation"], root / "source_audit.json")
     strong = audit["sources"]["strong"]["summary"]["success_rate"]
     if strong < config["datasets"]["minimum_collector_success"]:

@@ -21,6 +21,8 @@ def main():
     parser.add_argument("--reports")
     parser.add_argument("--format", choices=["gif", "mp4"])
     args = parser.parse_args()
+    from .common import resource_path
+    config_path = resource_path(args.config).resolve()
     os.environ.setdefault("MPLCONFIGDIR", str(Path(args.root).resolve() / ".matplotlib"))
     if args.command == "doctor":
         import gymnasium
@@ -50,16 +52,16 @@ def main():
                           "outcome": info["outcome"]}, indent=2))
     elif args.command in ["ppo", "collect"]:
         from .collector import collect, train_ppo
-        config = json.loads(Path(args.config).read_text())
+        config = json.loads(config_path.read_text())
         if args.command == "ppo":
             train_ppo(config["ppo"], Path(args.root) / "ppo", resume=args.resume)
         else:
-            results = collect(config, args.root, target=args.transitions)
+            results = collect(config, args.root, target=args.transitions, config_path=config_path)
             print(json.dumps({name: {"transitions": value["transitions"], "episodes": value["episodes"]}
                               for name, value in results.items()}, indent=2))
     elif args.command == "train":
         from .offline import train_offline
-        config = json.loads(Path(args.config).read_text())
+        config = json.loads(config_path.read_text())
         dataset = Path(args.dataset) if args.dataset else Path(args.root) / "datasets/strong.npz"
         output = Path(args.output) if args.output else Path(args.root) / "runs" / dataset.stem / args.method / f"seed-{args.seed}.pt"
         train_offline(dataset, output, config["offline"], method=args.method, seed=args.seed, resume=args.resume)
@@ -67,8 +69,8 @@ def main():
         from .evaluation import evaluate, export_replay, load_policy
         from .common import seed_everything, sha256, write_json
         seed_everything(0)
-        config = json.loads(Path(args.config).read_text())
-        seeds = json.loads(Path(config["seeds_file"]).read_text())["evaluation"]
+        config = json.loads(config_path.read_text())
+        seeds = json.loads(resource_path(config['seeds_file'],config_path).read_text())['evaluation']
         checkpoint = args.checkpoint
         if checkpoint is None and args.method != "random":
             checkpoint = Path(args.root) / "ppo/final.zip" if args.method == "ppo" else Path(args.root) / "runs/strong" / args.method / f"seed-{args.seed}.pt"
@@ -90,17 +92,17 @@ def main():
             print(json.dumps(replay, indent=2))
     elif args.command == 'ablation':
         from .ablation import run_ablation
-        config = json.loads(Path(args.config).read_text())
+        config = json.loads(config_path.read_text())
         if 'study' not in config:
             parser.error('ablation requires a study config, e.g. --config configs/ablation.json')
         if args.workers != 1:
             parser.error('ablation uses one worker; --workers must be 1')
-        result = run_ablation(config, args.root, reports=args.reports)
+        result = run_ablation(config, args.root, reports=args.reports, config_path=config_path)
         print(json.dumps({'runs':len(result['runs']), 'seconds':result['session_seconds']},indent=2))
     elif args.command in ["experiments", "pipeline"]:
         from .experiments import pipeline, run_matrix
-        config = json.loads(Path(args.config).read_text())
+        config = json.loads(config_path.read_text())
         run = pipeline if args.command == "pipeline" else run_matrix
-        result = run(config, args.root, workers=args.workers, reports=args.reports)
+        result = run(config, args.root, workers=args.workers, reports=args.reports, config_path=config_path)
         print(json.dumps({"runs": len(result["runs"]), "seconds": result["matrix_session_seconds"],
                           "aggregate": result["aggregate"]}, indent=2))
