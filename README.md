@@ -171,6 +171,56 @@ The audit covers 39 checkpoints, 3,900 test episodes, 300 collector-reference
 episodes, and three new MP4/GIF pairs. Original proposal and pilot reports
 retain their own implementation provenance.
 
+## Download trained models and frozen datasets
+
+Final artifacts are distributed separately through the
+[artifacts-v1 GitHub Release](https://github.com/SanyaLikeIT/cql-minigrid/releases/tag/artifacts-v1).
+`artifacts/` stays ignored by Git. A normal clone or push includes code and compact
+reports; it does not include the model or dataset files.
+
+| Asset | Contents |
+|---|---|
+| [cql-minigrid-models.zip](https://github.com/SanyaLikeIT/cql-minigrid/releases/download/artifacts-v1/cql-minigrid-models.zip) | All 57 reported final offline checkpoints, 2 PPO checkpoints, evaluation/training JSON, and experiment metadata |
+| [cql-minigrid-datasets.zip](https://github.com/SanyaLikeIT/cql-minigrid/releases/download/artifacts-v1/cql-minigrid-datasets.zip) | Strong (200,035), original mixed (200,019), and balanced mixed (200,025) transitions, with original NPZ/JSON files |
+| [artifacts-manifest.json](https://github.com/SanyaLikeIT/cql-minigrid/releases/download/artifacts-v1/artifacts-manifest.json) | Per-file SHA-256 values, sizes, counts, and historical experiment revisions |
+| [SHA256SUMS](https://github.com/SanyaLikeIT/cql-minigrid/releases/download/artifacts-v1/SHA256SUMS) | Checksums of both ZIPs and the manifest |
+
+Install dependencies as described below, then run from the project root. Model
+evaluation needs only the models ZIP; large frozen datasets are optional for it.
+Downloads need no GitHub account or authentication:
+
+```sh
+mkdir -p artifacts/downloads
+curl -fL https://github.com/SanyaLikeIT/cql-minigrid/releases/download/artifacts-v1/SHA256SUMS -o artifacts/downloads/SHA256SUMS
+curl -fL https://github.com/SanyaLikeIT/cql-minigrid/releases/download/artifacts-v1/artifacts-manifest.json -o artifacts/downloads/artifacts-manifest.json
+curl -fL https://github.com/SanyaLikeIT/cql-minigrid/releases/download/artifacts-v1/cql-minigrid-models.zip -o artifacts/downloads/cql-minigrid-models.zip
+(cd artifacts/downloads && sha256sum --ignore-missing -c SHA256SUMS)
+unzip -n artifacts/downloads/cql-minigrid-models.zip -d .
+.venv/bin/python -m cql_minigrid evaluate --config configs/main.json --method cql --checkpoint artifacts/final/runs/mixed/cql/seed-0.pt --output artifacts/downloaded-cql-evaluation.json
+```
+
+For offline training reproduction, also download and verify the datasets ZIP:
+
+```sh
+curl -fL https://github.com/SanyaLikeIT/cql-minigrid/releases/download/artifacts-v1/cql-minigrid-datasets.zip -o artifacts/downloads/cql-minigrid-datasets.zip
+(cd artifacts/downloads && sha256sum --ignore-missing -c SHA256SUMS)
+unzip -n artifacts/downloads/cql-minigrid-datasets.zip -d .
+```
+
+Both ZIPs extract `artifacts/...` paths at the project root. `unzip -n` preserves
+existing local files; checksum mismatches should be resolved using a fresh
+extraction rather than overwriting research data. The assets omit rolling PPO
+`latest.zip`, intermediate collection shards, obsolete pilots, and recordings.
+Complete datasets and final PPO remain usable without those duplicates.
+To rebuild the assets from the complete local artifacts:
+
+```sh
+python3 scripts/build_release_assets.py
+```
+
+The standard-library builder verifies the saved dataset/checkpoint hashes and
+writes deterministic ZIPs, a manifest, and checksums under `dist/release-assets/`.
+
 ## Install and reproduce
 
 Run commands from the repository root with **Python 3.12**:
@@ -247,7 +297,7 @@ references, and gameplay took **340.23 s**. Original PPO training took
 Timers exclude imports/setup outside their measured scopes. Runtime records
 and older pilot timings are retained separately.
 
-The 47 tests cover seeded observations, exact rewards and ending priority,
+The 50 tests cover seeded observations, exact rewards and ending priority,
 raw clocks, TD masks, known CQL values, alpha=0 loss/gradient equality, exact
 offline resume, checksums, replay/metric agreement, and sample-SD aggregation.
 GitHub Actions runs these tests and the small pipeline; full experiments run
@@ -269,9 +319,14 @@ directory. The small configuration disables the collector quality gate.
 | `artifacts/proposal-smoke/`, `artifacts/pilots/` | Small pilot and collector diagnostics |
 | `reports/` | Tracked final tables, plots, audit, runtime, and gameplay |
 
-Raw datasets, weights, and full logs are local artifacts; compact reports and
-videos are versioned. The final source revision and file hashes are recorded
-in the report. [rendering.json](reports/rendering.json) identifies the renderer
+Raw datasets and weights are ignored by Git and available as Release assets;
+full logs stay local. Compact reports and videos are versioned. The source
+revisions and file hashes in the saved reports identify the code
+used for the original experiments. Later portability fixes changed some source
+files, so historical source hashes can differ from the current checkout. These
+hashes and the recorded metrics are intentionally preserved. Dataset and
+checkpoint checksums still verify the unchanged experimental artifacts.
+[rendering.json](reports/rendering.json) identifies the renderer
 and its input-results hash. `cql-minigrid-project.zip` in the repository root
 contains the project and local artifacts, excluding Git, virtual environments,
 caches, and previous project archives; it is kept below 500 MB.

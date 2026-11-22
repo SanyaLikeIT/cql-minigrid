@@ -8,3 +8,5 @@ __pycache__/
 .ruff_cache/
 build/
 dist/
+
+/cql-minigrid-project*.zip
