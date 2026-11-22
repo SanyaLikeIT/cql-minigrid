@@ -10,16 +10,16 @@ from .common import sha256, write_json
 METRICS = ['success_rate','collision_rate','timeout_rate','return_mean','successful_steps_mean']
 
 
-def aggregate(runs):
+def aggregate(runs, *, group_by=('dataset', 'method')):
     groups = {}
     for run in runs:
-        groups.setdefault((run['dataset'],run['method']),[]).append(run)
+        groups.setdefault(tuple(run[key] for key in group_by),[]).append(run)
     result = []
-    for (dataset,method), members in sorted(groups.items()):
+    for key, members in sorted(groups.items()):
         seeds = [r['seed'] for r in members]
         if len(seeds) != len(set(seeds)):
             raise ValueError('Duplicate training seed in an aggregate group')
-        row = {'dataset':dataset,'method':method,'training_seeds':sorted(seeds),'n':len(seeds)}
+        row = {**dict(zip(group_by,key,strict=True)),'training_seeds':sorted(seeds),'n':len(seeds)}
         for metric in METRICS:
             values = [r['metrics'][metric] for r in members if r['metrics'][metric] is not None]
             row[metric] = {'mean':float(np.mean(values)) if values else None,

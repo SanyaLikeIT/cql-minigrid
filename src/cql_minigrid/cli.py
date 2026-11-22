@@ -7,7 +7,7 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description="Team 12 offline MiniGrid experiments")
-    parser.add_argument("command", choices=["doctor", "env-smoke", "ppo", "collect", "train", "evaluate", "replay", "experiments", "pipeline"])
+    parser.add_argument("command", choices=["doctor", "env-smoke", "ppo", "collect", "train", "evaluate", "replay", "experiments", "pipeline", "ablation"])
     parser.add_argument("--config", default="configs/main.json")
     parser.add_argument("--root", default="artifacts/final")
     parser.add_argument("--resume", action="store_true")
@@ -88,6 +88,15 @@ def main():
             path = Path(output)
             write_json(path.with_suffix(path.suffix + '.json'), replay)
             print(json.dumps(replay, indent=2))
+    elif args.command == 'ablation':
+        from .ablation import run_ablation
+        config = json.loads(Path(args.config).read_text())
+        if 'study' not in config:
+            parser.error('ablation requires a study config, e.g. --config configs/ablation.json')
+        if args.workers != 1:
+            parser.error('ablation uses one worker; --workers must be 1')
+        result = run_ablation(config, args.root, reports=args.reports)
+        print(json.dumps({'runs':len(result['runs']), 'seconds':result['session_seconds']},indent=2))
     elif args.command in ["experiments", "pipeline"]:
         from .experiments import pipeline, run_matrix
         config = json.loads(Path(args.config).read_text())

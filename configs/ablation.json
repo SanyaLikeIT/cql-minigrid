@@ -1,0 +1,62 @@
+{
+  "seeds_file": "configs/ablation_seeds.json",
+  "ppo": {
+    "seed": 12,
+    "total_timesteps": 400000,
+    "early_timesteps": 10000,
+    "checkpoint_interval": 32768,
+    "n_envs": 8,
+    "n_steps": 256,
+    "batch_size": 256,
+    "n_epochs": 4,
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "ent_coef": 0.03,
+    "shaping_scale": 0.2,
+    "step_cost": 0.005
+  },
+  "datasets": {
+    "transitions": 200000,
+    "minimum_collector_success": 0.6,
+    "mixtures": {
+      "mixed_balanced": {
+        "strong": 0.5,
+        "early": 0.25,
+        "random": 0.25
+      }
+    },
+    "sampling_unit": "transitions"
+  },
+  "offline": {
+    "hidden": [
+      128,
+      128
+    ],
+    "updates": 5000,
+    "batch_size": 256,
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "bootstrap_on_truncation": false,
+    "target_interval": 250,
+    "checkpoint_interval": 1000,
+    "log_interval": 100,
+    "alpha": 1.0
+  },
+  "study": {
+    "alphas": [
+      0.0,
+      0.1,
+      1.0,
+      5.0
+    ],
+    "datasets": {
+      "strong": "artifacts/final/datasets/strong.npz",
+      "mixed_episode": "artifacts/final/datasets/mixed.npz",
+      "mixed_balanced": "artifacts/ablation/datasets/mixed_balanced.npz"
+    },
+    "bc_datasets": [
+      "mixed_balanced"
+    ],
+    "ppo_root": "artifacts/final/ppo"
+  }
+}

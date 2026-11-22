@@ -57,3 +57,43 @@ def test_legacy_pilot_counter_derivation_and_counter_validation(tmp_path):
     write_json(path.with_suffix('.json'), meta)
     with pytest.raises(ValueError, match='next_elapsed_steps'):
         load_dataset(path)
+
+
+def test_transition_quotas_mix_different_episode_lengths_and_resume(tmp_path, monkeypatch):
+    from cql_minigrid import collector
+    class DifferentLengths:
+        elapsed_steps = 0
+        def reset(self, seed):
+            self.elapsed_steps = 0
+            return np.zeros(1), {}
+        def step(self, action):
+            self.elapsed_steps += 1
+            done = self.elapsed_steps >= (31 if action == 0 else 2)
+            return np.zeros(1), 0., done, False, {'elapsed_steps':self.elapsed_steps,'outcome':'collision'}
+        def close(self):
+            pass
+    monkeypatch.setattr(collector, 'make_env', DifferentLengths)
+    kwargs = dict(policies={'long':lambda obs,rng:0, 'short':lambda obs,rng:1},
+                  weights={'long':.5,'short':.5}, target=2000, episode_seed_start=1000000,
+                  policy_seed_start=120, source_hashes={},source_audit={},shard_episodes=7)
+    quota = collect_dataset(tmp_path/'quota.npz', **kwargs, sampling_unit='transitions')
+    assert 2000 <= quota['transitions'] < 2031
+    assert abs(quota['sources']['long']['transitions']/quota['transitions']-.5) < .02
+    assert quota == collect_dataset(tmp_path/'quota.npz', **kwargs, sampling_unit='transitions')
+    # Reconstruct a genuinely interrupted collection from its first saved shard.
+    from pathlib import Path
+    import json, shutil
+    interrupted = tmp_path/'interrupted.npz'
+    parts = interrupted.with_suffix('.parts');parts.mkdir()
+    manifest = json.loads((tmp_path/'quota.parts/progress.json').read_text())
+    manifest['parts'] = manifest['parts'][:1]
+    manifest['episodes'] = manifest['episodes'][:7]
+    manifest['transitions'] = sum(e['steps'] for e in manifest['episodes'])
+    shutil.copy2(tmp_path/'quota.parts/part-00000.npz',parts/'part-00000.npz')
+    write_json(parts/'progress.json',manifest)
+    resumed = collect_dataset(interrupted, **kwargs, sampling_unit='transitions')
+    assert resumed['sha256'] == quota['sha256']
+    episode = collect_dataset(tmp_path/'episode.npz', **kwargs)
+    assert episode['sources']['long']['transitions']/episode['transitions'] > .85
+    with pytest.raises(ValueError,match='changed'):
+        collect_dataset(tmp_path/'quota.npz', **kwargs, sampling_unit='episodes')

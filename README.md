@@ -12,6 +12,10 @@ transitions**, with 18 fresh offline runs: three methods × two frozen datasets
 episodes. Reports include all five proposal metrics, PPO collector references,
 and MP4/GIF gameplay. The 50,000-transition pilot and the small CPU pilot are retained.
 
+A separate [mixed-data and alpha study](docs/ablation.md) adds a transition-balanced
+mixed file and 39 runs with alpha values 0, 0.1, 1, and 5. Original results below
+remain available for comparison.
+
 ## Final results
 
 Values are mean ± **sample standard deviation across training seeds 0, 1, 2**.
@@ -47,7 +51,9 @@ higher return coexists with more timeouts. BC also has lower mean success on
 `mixed`. This experiment varies source quality and action coverage together:
 93.8% of mixed transitions still come from final PPO. It uses one collector
 training seed, one frozen file per condition, one CQL alpha (1.0), and one
-update budget; it does not isolate a causal effect of lower-quality data.
+update budget; it does not isolate a causal effect of lower-quality data. The
+follow-up study varies alpha and includes mixed data with approximately
+50%/25%/25% transitions from final PPO, early PPO, and random.
 
 ## Collector reference on the same test seeds
 
@@ -128,6 +134,43 @@ reuses these validated PPO checkpoints with identical hashes and numerical
 observation encoding, recorded in `artifacts/final/collector_reuse.json`.
 All 18 final offline policies were trained afresh on the 200k files.
 
+## Mixed-data and alpha follow-up
+
+The new file has **200,025 transitions**: 50.0262% final PPO and 24.9869%
+each early PPO/random. Whole episodes are retained. The original episode-sampled
+mixed file remains unchanged. The additional study contains 36 CQL runs
+(three files × four alphas × three seeds) and three BC runs on the balanced file.
+The following values are success %, mean ± sample SD over seeds 0, 1, 2:
+
+| Dataset | α=0 (DQN) | α=0.1 | α=1 | α=5 |
+|---|---:|---:|---:|---:|
+| strong | 0.0 ± 0.0 | 61.3 ± 8.5 | 61.7 ± 1.5 | 56.7 ± 2.9 |
+| mixed_episode | 15.7 ± 26.3 | 58.3 ± 10.0 | 60.7 ± 6.1 | 56.3 ± 4.2 |
+| mixed_balanced | 61.0 ± 51.1 | 48.0 ± 25.2 | 2.7 ± 2.3 | 0.0 ± 0.0 |
+
+Balanced-data DQN has seed success rates of **91%, 90%, 2%**, so its mean has
+substantial variation. Alpha 0 is the DQN control; complete parameter tensors
+and metrics reproduced the original DQN/CQL controls at alpha 0/1 on both old
+files. Alpha values were fixed before the study; these common-test-seed results
+do not select a new default. The default remains alpha 1.
+
+At alpha 1, changing the mixed file from episode sampling to transition quotas
+changes mean success from 60.7% to 2.7%,
+collision from 13.3% to 96.3%,
+timeout from 26.0% to 1.0%,
+and return from 0.357 to -0.939.
+BC on balanced data has 0.0 ± 0.0% success.
+
+![All five metrics and actual transition composition](reports/ablation/alpha_metrics.png)
+
+[Study design and full results](docs/ablation.md),
+[all five metrics](reports/ablation/results_table.md),
+[per-run CSV](reports/ablation/per_run.csv), and
+[artifact audit](reports/ablation/integrity.json) retain the details.
+The audit covers 39 checkpoints, 3,900 test episodes, 300 collector-reference
+episodes, and three new MP4/GIF pairs. Original proposal and pilot reports
+retain their own implementation provenance.
+
 ## Install and reproduce
 
 Run commands from the repository root with **Python 3.12**:
@@ -204,11 +247,13 @@ references, and gameplay took **340.23 s**. Original PPO training took
 Timers exclude imports/setup outside their measured scopes. Runtime records
 and older pilot timings are retained separately.
 
-The 26 tests cover seeded observations, exact rewards and ending priority,
+The 40 tests cover seeded observations, exact rewards and ending priority,
 raw clocks, TD masks, known CQL values, alpha=0 loss/gradient equality, exact
 offline resume, checksums, replay/metric agreement, and sample-SD aggregation.
 GitHub Actions runs these tests and the small pipeline; full experiments run
-locally. The small configuration disables the collector quality gate.
+locally. CI also runs a small alpha study. Provenance tests cover missing Git,
+ZIP extraction inside an unrelated repository, and a different working
+directory. The small configuration disables the collector quality gate.
 
 | Path | Contents |
 |---|---|
