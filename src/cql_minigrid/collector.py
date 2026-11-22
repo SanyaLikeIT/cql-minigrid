@@ -107,8 +107,13 @@ def save_npz(path, arrays):
 
 
 def collect_dataset(path, policies, weights, *, target, episode_seed_start,
-                    policy_seed_start, source_hashes, source_audit, shard_episodes=128):
-    """Choose sources per episode; finish episodes instead of inventing truncations."""
+                    policy_seed_start, source_hashes, source_audit, shard_episodes=128,
+                    sampling_unit='episodes'):
+    """Mix complete episodes, optionally controlling source transition quotas."""
+    if sampling_unit not in ['episodes', 'transitions']:
+        raise ValueError('sampling_unit must be episodes or transitions')
+    if target < 1 or shard_episodes < 1:
+        raise ValueError('target and shard_episodes must be positive')
     path = Path(path)
     parts = path.with_suffix(".parts")
     parts.mkdir(parents=True, exist_ok=True)
@@ -116,6 +121,9 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
     identity = {"weights": weights, "target": target, "episode_seed_start": episode_seed_start,
                 "policy_seed_start": policy_seed_start, "source_sha256": source_hashes,
                 "observation": observation_spec()}
+    # Keep the existing episode-sampled manifests compatible and unchanged.
+    if sampling_unit != 'episodes':
+        identity['sampling_unit'] = sampling_unit
     manifest = {"identity": identity, "parts": [], "episodes": [], "transitions": 0}
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text())
@@ -125,6 +133,9 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
     probabilities = np.array(list(weights.values()), dtype=float)
     if np.any(probabilities < 0) or not np.isclose(probabilities.sum(), 1):
         raise ValueError("Mixture weights must be nonnegative and sum to one")
+    counts = {name: sum(e['steps'] for e in manifest['episodes'] if e['source'] == name)
+              for name in names}
+    quotas = {name: target * weights[name] for name in names}
     env = make_env()
     while manifest["transitions"] < target:
         rows = {key: [] for key in TRANSITION_FIELDS}
@@ -133,7 +144,11 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
             eid = len(manifest["episodes"]) + len(episode_records)
             seed, policy_seed = episode_seed_start + eid, policy_seed_start + eid
             rng = np.random.default_rng(policy_seed)
-            name = str(rng.choice(names, p=probabilities))
+            if sampling_unit == 'transitions':
+                # Fill the largest remaining quota; never split an episode.
+                name = max(names, key=lambda name: quotas[name] - counts[name])
+            else:
+                name = str(rng.choice(names, p=probabilities))
             obs, _ = env.reset(seed=seed)
             total = 0.0
             for step in range(1, 257):
@@ -147,6 +162,7 @@ def collect_dataset(path, policies, weights, *, target, episode_seed_start,
                 obs = next_obs
                 total += float(reward)
                 if terminated or truncated:
+                    counts[name] += step
                     episode_records.append({"episode_id": eid, "source": name, "seed": seed,
                                             "policy_seed": policy_seed, "steps": step,
                                             "return": total, "outcome": info["outcome"]})
@@ -216,5 +232,6 @@ def collect(config, root, *, target=None):
             target=target or config["datasets"]["transitions"],
             episode_seed_start=seeds["collection_episode_start"] + i * 100000,
             policy_seed_start=seeds["collection_rng"] + i * 100000,
-            source_hashes=hashes, source_audit=audit)
+            source_hashes=hashes, source_audit=audit,
+            sampling_unit=config['datasets'].get('sampling_unit', 'episodes'))
     return results

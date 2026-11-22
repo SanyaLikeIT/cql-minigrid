@@ -34,10 +34,10 @@ def export_checkpoint_replays(root, name, method, checkpoint, seed, extra):
                                 'checkpoint_sha256':checkpoint_hash, 'method':method, **extra})
 
 
-def run_one(root, dataset, method, seed, config, evaluation_seeds, demo):
+def run_one(root, dataset, method, seed, config, evaluation_seeds, demo, *, dataset_path=None, run_name=None):
     root = Path(root)
-    checkpoint = root / 'runs' / dataset / method / f'seed-{seed}.pt'
-    train_offline(root / 'datasets' / f'{dataset}.npz', checkpoint, config,
+    checkpoint = root / 'runs' / dataset / (run_name or method) / f'seed-{seed}.pt'
+    train_offline(dataset_path or root / 'datasets' / f'{dataset}.npz', checkpoint, config,
                   method=method, seed=seed, resume=checkpoint.exists())
     report_path = checkpoint.with_suffix('.eval.json')
     checkpoint_hash = sha256(checkpoint)
@@ -60,14 +60,30 @@ def run_one(root, dataset, method, seed, config, evaluation_seeds, demo):
 
 
 def provenance():
-    root = Path(__file__).parent
+    root = Path(__file__).resolve().parent
+    project = root.parent.parent if root.parent.name == 'src' else root.parent
+    revision, state, reason = None, 'unavailable', 'no_repository'
+    # An extracted project may itself be inside an unrelated Git checkout.
+    if (project / '.git').exists():
+        def git(*args):
+            return subprocess.check_output(['git', '-C', str(project), *args], text=True,
+                                           stderr=subprocess.DEVNULL, timeout=5).strip()
+        try:
+            if Path(git('rev-parse', '--show-toplevel')).resolve() == project:
+                revision = git('rev-parse', 'HEAD')
+                state = 'dirty' if git('status', '--porcelain', '--untracked-files=all') else 'clean'
+                reason = None
+        except FileNotFoundError:
+            reason = 'git_missing'
+        except (OSError, subprocess.SubprocessError):
+            reason = 'git_unavailable'
     return {'python': platform.python_version(), 'platform': platform.platform(), 'device': 'cpu',
             'threads_per_training_worker': 1,
             'packages': {name: importlib.metadata.version(name) for name in
                          ['torch','gymnasium','minigrid','stable-baselines3','numpy','matplotlib',
                           'imageio-ffmpeg','pillow']},
-            'base_git_revision': subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
-            'source_sha256': {str(path.relative_to(Path.cwd())): sha256(path)
+            'base_git_revision': revision, 'git_status': state, 'git_unavailable_reason': reason,
+            'source_sha256': {str(Path('src') / root.name / path.name): sha256(path)
                               for path in sorted(root.glob('*.py'))}}
 
 
