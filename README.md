@@ -1,9 +1,5 @@
 # cql-minigrid
 
-For the Moodle package, start with [SUBMISSION_README.md](SUBMISSION_README.md)
-and the executed [CQL value-update notebook](notebooks/CQL_value_update_demo.ipynb).
-The package builder has separate draft/final modes; final media is author-supplied.
-
 **Team 12 — Reinforcement Learning.** PyTorch implementations of offline DQN,
 discrete Conservative Q-Learning (CQL), and behavioral cloning (BC) for
 `MiniGrid-Dynamic-Obstacles-8x8-v0`. PPO supplies the recorded experience.
@@ -251,7 +247,7 @@ references, and gameplay took **340.23 s**. Original PPO training took
 Timers exclude imports/setup outside their measured scopes. Runtime records
 and older pilot timings are retained separately.
 
-The 40 tests cover seeded observations, exact rewards and ending priority,
+The 47 tests cover seeded observations, exact rewards and ending priority,
 raw clocks, TD masks, known CQL values, alpha=0 loss/gradient equality, exact
 offline resume, checksums, replay/metric agreement, and sample-SD aggregation.
 GitHub Actions runs these tests and the small pipeline; full experiments run
@@ -295,7 +291,6 @@ GIFs have independent `.gif.json` metadata for the same episode.
 | mixed | [timeout, 256 steps](reports/demos/mixed-dqn.mp4) | [success, 148 steps](reports/demos/mixed-cql.mp4) | [success, 112 steps](reports/demos/mixed-bc.mp4) |
 
 [PPO collector MP4: success, 64 steps](reports/demos/ppo-collector.mp4).
-The full workspace also retains matching GIFs. The Moodle package includes MP4
-versions and their metadata, with duplicate GIFs omitted.
+The matching GIFs share these filenames with a `.gif` extension.
 
-[Play CQL on mixed data, test seed 20000](reports/demos/mixed-cql.mp4).
+![CQL on mixed data, test seed 20000](reports/demos/mixed-cql.gif)
