@@ -10,9 +10,9 @@ from stable_baselines3 import PPO
 from .common import seed_everything, sha256, write_json
 from .env import make_env, observation_spec
 from .offline import NetworkPolicy
-from .rollout import ppo_policy, random_policy, run_episodes
+from .rollout import NavigationStats, STALL_THRESHOLD, ppo_policy, random_policy, run_episodes
 
-EVALUATION_VERSION = 'proposal-metrics-v1'
+EVALUATION_VERSION = 'proposal-metrics-v2-navigation'
 REPLAY_VERSION = 'gif-mp4-v1'
 
 
@@ -35,7 +35,8 @@ def evaluate(method, checkpoint, seeds, output):
     if not seeds or len(seeds) != len(set(seeds)):
         raise ValueError('Evaluation seeds must be nonempty and unique')
     policy, identity = load_policy(method, checkpoint)
-    report = {'evaluation_version': EVALUATION_VERSION, **run_episodes(policy, seeds), 'seeds': seeds, 'policy': identity,
+    report = {'evaluation_version': EVALUATION_VERSION, 'stall_threshold': STALL_THRESHOLD,
+              **run_episodes(policy, seeds), 'seeds': seeds, 'policy': identity,
               'checkpoint': str(checkpoint) if checkpoint else None,
               'checkpoint_sha256': sha256(checkpoint) if checkpoint else None,
               'observation': observation_spec()}
@@ -54,9 +55,13 @@ def export_replay(policy, path, seed, *, fps=8, max_frames=80):
     rng = np.random.default_rng(int(seed))
     frames = [Image.fromarray(env.render())]
     total = 0.0
+    stats = NavigationStats()
     try:
         for step in range(1, 257):
-            obs, reward, terminated, truncated, info = env.step(policy(obs, rng))
+            action = policy(obs, rng)
+            before = tuple(env.unwrapped.agent_pos)
+            obs, reward, terminated, truncated, info = env.step(action)
+            stats.update(action, before, env.unwrapped.agent_pos)
             total += float(reward)
             frames.append(Image.fromarray(env.render()))
             if terminated or truncated:
@@ -95,7 +100,8 @@ def export_replay(policy, path, seed, *, fps=8, max_frames=80):
                 'return': total, 'outcome': info['outcome'], 'terminated': bool(terminated),
                 'truncated': bool(truncated), 'format': kind, 'fps': fps, 'frame_indices': indices,
                 'sampled_frames': len(selected), 'encoded_frames': int(encoded_frames),
-                'duration_seconds': float(duration), 'file_sha256': digest, kind+'_sha256': digest}
+                'duration_seconds': float(duration), 'file_sha256': digest, kind+'_sha256': digest,
+                'stall_threshold': STALL_THRESHOLD, **stats.report()}
     if kind == 'mp4':
         metadata.update(codec='h264', pixel_format='yuv420p', ffmpeg_version=imageio_ffmpeg.get_ffmpeg_version())
     write_json(path.with_suffix(path.suffix+'.json'), metadata)

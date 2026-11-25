@@ -10,7 +10,7 @@ from .common import sha256, write_json
 METRICS = ['success_rate','collision_rate','timeout_rate','return_mean','successful_steps_mean']
 
 
-def aggregate(runs, *, group_by=('dataset', 'method')):
+def aggregate(runs, *, group_by=('dataset', 'method'), metrics=METRICS):
     groups = {}
     for run in runs:
         groups.setdefault(tuple(run[key] for key in group_by),[]).append(run)
@@ -20,7 +20,7 @@ def aggregate(runs, *, group_by=('dataset', 'method')):
         if len(seeds) != len(set(seeds)):
             raise ValueError('Duplicate training seed in an aggregate group')
         row = {**dict(zip(group_by,key,strict=True)),'training_seeds':sorted(seeds),'n':len(seeds)}
-        for metric in METRICS:
+        for metric in metrics:
             values = [r['metrics'][metric] for r in members if r['metrics'][metric] is not None]
             row[metric] = {'mean':float(np.mean(values)) if values else None,
                            'std':float(np.std(values,ddof=1 if len(values)>1 else 0)) if values else None,
@@ -68,7 +68,8 @@ def write_reports(result,root,reports):
             writer.writerow({key:run['metrics'][key] if key in METRICS else run[key] for key in fields})
     with (reports/'collector_reference.csv').open('w',newline='') as file:
         writer=csv.DictWriter(file,fieldnames=['source','episodes',*METRICS],lineterminator='\n');writer.writeheader()
-        for name,row in result['references'].items():writer.writerow({'source':name,**row})
+        for name,row in result['references'].items():
+            writer.writerow({'source':name, **{key: row[key] for key in ['episodes', *METRICS]}})
     colors={'dqn':'#4c78a8','cql':'#f58518','bc':'#54a24b'}
     datasets=list(result['datasets'])
 

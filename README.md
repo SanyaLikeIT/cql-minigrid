@@ -6,7 +6,41 @@ discrete Conservative Q-Learning (CQL), and behavioral cloning (BC) for
 [Presentation.pdf](docs/Presentation.pdf) defines the project requirements;
 [the requirements map](docs/proposal_requirements.md) links slides to implementation.
 
-The final experiment uses **200,035 strong transitions and 200,019 mixed
+## Efficient navigation follow-up
+
+The [navigation study](docs/navigation.md) fine-tunes the existing CQL checkpoints
+using separate shortest-path demonstrations, optional step costs, and 50 geometry
+features derived from the same 837-value observation. The deployed policy is a
+greedy neural network, with no planner or action mask.
+
+On **200 fresh test seeds per training seed (600 improved-policy episodes)**,
+the selected configuration achieved **100% success, zero collisions/timeouts,
+and zero stationary runs of 16 or more actions**. Mean successful length fell
+from **66.40 to 16.68 actions** against the original models on the same seeds.
+These are measured outcomes on this test set, not a guarantee for every seed.
+The historical demo now takes **18 actions instead of 148**.
+
+[Improved gameplay](reports/navigation/demos/improved.mp4),
+[before/after plots](reports/navigation/metrics.png),
+[full results](reports/navigation/summary.json), and
+[episode/checksum audit](reports/navigation/integrity.json) retain the evidence.
+Original experiments below are preserved. New model weights and data stay local
+under `artifacts/navigation-geometry/` and `artifacts/navigation-guided/`;
+they are not included in the older `artifacts-v1` release.
+
+```sh
+# With the locally trained artifacts, generate a new replay.
+.venv/bin/python -m cql_minigrid replay --method cql --checkpoint artifacts/navigation-geometry/best.pt --output artifacts/navigation-geometry/my-demo.mp4
+# Recheck the selected checkpoint on the new test seed set.
+.venv/bin/python -m cql_minigrid evaluate --config artifacts/navigation-geometry/evaluation-config.json --method cql --checkpoint artifacts/navigation-geometry/best.pt --output artifacts/navigation-geometry/my-evaluation.json
+```
+
+See [the study's reproduction commands](docs/navigation.md#reproduce) to collect
+new demonstrations and fine-tune the models from the original released weights.
+
+## Original proposal experiment
+
+The original final experiment uses **200,035 strong transitions and 200,019 mixed
 transitions**, with 18 fresh offline runs: three methods × two frozen datasets
 × three training seeds. Each run has 5,000 updates and 100 common held-out test
 episodes. Reports include all five proposal metrics, PPO collector references,

@@ -1,0 +1,913 @@
+{
+  "config": {
+    "seeds_file": "configs/seeds.json",
+    "ppo": {
+      "seed": 12,
+      "total_timesteps": 400000,
+      "early_timesteps": 10000,
+      "checkpoint_interval": 32768,
+      "n_envs": 8,
+      "n_steps": 256,
+      "batch_size": 256,
+      "n_epochs": 4,
+      "learning_rate": 0.0003,
+      "gamma": 0.99,
+      "ent_coef": 0.03,
+      "shaping_scale": 0.2,
+      "step_cost": 0.005
+    },
+    "datasets": {
+      "transitions": 200000,
+      "minimum_collector_success": 0.6,
+      "mixtures": {
+        "strong": {
+          "strong": 1.0
+        },
+        "mixed": {
+          "strong": 0.5,
+          "early": 0.25,
+          "random": 0.25
+        }
+      }
+    },
+    "offline": {
+      "hidden": [
+        128,
+        128
+      ],
+      "updates": 5000,
+      "batch_size": 256,
+      "learning_rate": 0.0003,
+      "gamma": 0.99,
+      "bootstrap_on_truncation": false,
+      "target_interval": 250,
+      "checkpoint_interval": 1000,
+      "log_interval": 100,
+      "alpha": 1.0,
+      "navigation_features": true
+    },
+    "improvement": {
+      "baseline": "artifacts/final/runs/mixed/cql/seed-{seed}.pt",
+      "test_seed_start": 30000,
+      "test_episodes": 200,
+      "demo_seed": 20000,
+      "quality_tolerances": {
+        "success_tolerance": 0.0,
+        "collision_tolerance": 0.02,
+        "minimum_success": 0.95
+      },
+      "candidates": [
+        {
+          "name": "geometry-penalty-0",
+          "dataset": "artifacts/navigation-guided/datasets/guided.npz",
+          "initialize_from": "artifacts/final/runs/mixed/cql/seed-{seed}.pt",
+          "offline": {
+            "step_penalty": 0.0
+          }
+        },
+        {
+          "name": "geometry-penalty-0.005",
+          "dataset": "artifacts/navigation-guided/datasets/guided.npz",
+          "initialize_from": "artifacts/final/runs/mixed/cql/seed-{seed}.pt",
+          "offline": {
+            "step_penalty": 0.005
+          }
+        }
+      ]
+    },
+    "guided": {
+      "transitions": 50000,
+      "episode_seed_start": 1300000,
+      "policy_seed_start": 300120
+    }
+  },
+  "selection": {
+    "candidate": "geometry-penalty-0.005",
+    "representative": {
+      "candidate": "geometry-penalty-0.005",
+      "seed": 0,
+      "checkpoint": "artifacts/navigation-geometry/runs/geometry-penalty-0.005/seed-0.pt",
+      "checkpoint_sha256": "0979510cc709783edd5e92fea68706bb9d53881884b0c6eee1eb01f35aa1f2f8",
+      "metrics": {
+        "episodes": 64,
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "timeout_rate": 0.0,
+        "return_mean": 0.9375427246093749,
+        "successful_steps_mean": 17.765625,
+        "stall_rate": 0.0,
+        "max_stationary_steps_mean": 3.4375,
+        "turn_fraction_mean": 0.3177973088461718,
+        "steps_mean": 17.765625
+      }
+    },
+    "validation_aggregate": [
+      {
+        "candidate": "baseline",
+        "training_seeds": [
+          0,
+          1,
+          2
+        ],
+        "n": 3,
+        "success_rate": {
+          "mean": 0.5,
+          "std": 0.03125,
+          "valid_seeds": 3
+        },
+        "collision_rate": {
+          "mean": 0.171875,
+          "std": 0.04133986423538423,
+          "valid_seeds": 3
+        },
+        "timeout_rate": {
+          "mean": 0.328125,
+          "std": 0.046875,
+          "valid_seeds": 3
+        },
+        "return_mean": {
+          "mean": 0.21855468750000004,
+          "std": 0.05316793901323399,
+          "valid_seeds": 3
+        },
+        "successful_steps_mean": {
+          "mean": 62.354942810457516,
+          "std": 0.7426600045518477,
+          "valid_seeds": 3
+        },
+        "stall_rate": {
+          "mean": 0.8229166666666666,
+          "std": 0.023867581744561665,
+          "valid_seeds": 3
+        },
+        "max_stationary_steps_mean": {
+          "mean": 106.91666666666667,
+          "std": 7.532260262461616,
+          "valid_seeds": 3
+        },
+        "turn_fraction_mean": {
+          "mean": 0.8304462406468706,
+          "std": 0.006267725617083357,
+          "valid_seeds": 3
+        },
+        "steps_mean": {
+          "mean": 125.078125,
+          "std": 8.193178493608265,
+          "valid_seeds": 3
+        }
+      },
+      {
+        "candidate": "geometry-penalty-0",
+        "training_seeds": [
+          0,
+          1,
+          2
+        ],
+        "n": 3,
+        "success_rate": {
+          "mean": 1.0,
+          "std": 0.0,
+          "valid_seeds": 3
+        },
+        "collision_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "valid_seeds": 3
+        },
+        "timeout_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "valid_seeds": 3
+        },
+        "return_mean": {
+          "mean": 0.93660888671875,
+          "std": 0.00014533546020252687,
+          "valid_seeds": 3
+        },
+        "successful_steps_mean": {
+          "mean": 18.03125,
+          "std": 0.04133986423538423,
+          "valid_seeds": 3
+        },
+        "stall_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "valid_seeds": 3
+        },
+        "max_stationary_steps_mean": {
+          "mean": 3.5260416666666665,
+          "std": 0.047735163489123336,
+          "valid_seeds": 3
+        },
+        "turn_fraction_mean": {
+          "mean": 0.3208553260309376,
+          "std": 0.0018455951296837718,
+          "valid_seeds": 3
+        },
+        "steps_mean": {
+          "mean": 18.03125,
+          "std": 0.04133986423538423,
+          "valid_seeds": 3
+        }
+      },
+      {
+        "candidate": "geometry-penalty-0.005",
+        "training_seeds": [
+          0,
+          1,
+          2
+        ],
+        "n": 3,
+        "success_rate": {
+          "mean": 1.0,
+          "std": 0.0,
+          "valid_seeds": 3
+        },
+        "collision_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "valid_seeds": 3
+        },
+        "timeout_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "valid_seeds": 3
+        },
+        "return_mean": {
+          "mean": 0.93734130859375,
+          "std": 0.0003025398860202963,
+          "valid_seeds": 3
+        },
+        "successful_steps_mean": {
+          "mean": 17.822916666666668,
+          "std": 0.08605578980134534,
+          "valid_seeds": 3
+        },
+        "stall_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "valid_seeds": 3
+        },
+        "max_stationary_steps_mean": {
+          "mean": 3.484375,
+          "std": 0.04133986423538423,
+          "valid_seeds": 3
+        },
+        "turn_fraction_mean": {
+          "mean": 0.3174973180439456,
+          "std": 0.0030716860038599134,
+          "valid_seeds": 3
+        },
+        "steps_mean": {
+          "mean": 17.822916666666668,
+          "std": 0.08605578980134534,
+          "valid_seeds": 3
+        }
+      }
+    ],
+    "rule": "Meet baseline success/collision gates, then minimize stall rate and successful steps; representative maximizes validation success, then minimizes stalls and length.",
+    "stall_threshold": 16
+  },
+  "validation_runs": [
+    {
+      "candidate": "baseline",
+      "seed": 0,
+      "checkpoint": "artifacts/final/runs/mixed/cql/seed-0.pt",
+      "checkpoint_sha256": "c62008cb86e260ef1bcb12b5afe1a6326f6dd4914daa4c44ed2ad3f75a275c17",
+      "metrics": {
+        "episodes": 64,
+        "success_rate": 0.53125,
+        "collision_rate": 0.140625,
+        "timeout_rate": 0.328125,
+        "return_mean": 0.27570800781250004,
+        "successful_steps_mean": 61.529411764705884,
+        "stall_rate": 0.84375,
+        "max_stationary_steps_mean": 105.9375,
+        "turn_fraction_mean": 0.8285457557373721,
+        "steps_mean": 124.28125
+      }
+    },
+    {
+      "candidate": "baseline",
+      "seed": 1,
+      "checkpoint": "artifacts/final/runs/mixed/cql/seed-1.pt",
+      "checkpoint_sha256": "85521d4cd969a570d34cdc87df9da11828fb1f17ee107745dd9109dae2d6e1ab",
+      "metrics": {
+        "episodes": 64,
+        "success_rate": 0.5,
+        "collision_rate": 0.21875,
+        "timeout_rate": 0.28125,
+        "return_mean": 0.170562744140625,
+        "successful_steps_mean": 62.96875,
+        "stall_rate": 0.796875,
+        "max_stationary_steps_mean": 99.921875,
+        "turn_fraction_mean": 0.8253487147328229,
+        "steps_mean": 117.3125
+      }
+    },
+    {
+      "candidate": "baseline",
+      "seed": 2,
+      "checkpoint": "artifacts/final/runs/mixed/cql/seed-2.pt",
+      "checkpoint_sha256": "b82dbea7f51ecff2e09c18b9b846fba8b6062e161ac2f101096b7d38aa912c38",
+      "metrics": {
+        "episodes": 64,
+        "success_rate": 0.46875,
+        "collision_rate": 0.15625,
+        "timeout_rate": 0.375,
+        "return_mean": 0.20939331054687502,
+        "successful_steps_mean": 62.56666666666667,
+        "stall_rate": 0.828125,
+        "max_stationary_steps_mean": 114.890625,
+        "turn_fraction_mean": 0.8374442514704166,
+        "steps_mean": 133.640625
+      }
+    },
+    {
+      "candidate": "geometry-penalty-0",
+      "seed": 0,
+      "checkpoint": "artifacts/navigation-geometry/runs/geometry-penalty-0/seed-0.pt",
+      "checkpoint_sha256": "dd00b907bceef7d19f5ee32ca8b8dd41a8f7eb1b182ac1227f89ba0f3fa3f827",
+      "metrics": {
+        "episodes": 64,
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "timeout_rate": 0.0,
+        "return_mean": 0.9364990234375,
+        "successful_steps_mean": 18.0625,
+        "stall_rate": 0.0,
+        "max_stationary_steps_mean": 3.578125,
+        "turn_fraction_mean": 0.3218291911038836,
+        "steps_mean": 18.0625
+      }
+    },
+    {
+      "candidate": "geometry-penalty-0",
+      "seed": 1,
+      "checkpoint": "artifacts/navigation-geometry/runs/geometry-penalty-0/seed-1.pt",
+      "checkpoint_sha256": "a238ddd45bea94bf3b316c2918eae0135f37cf8fa53ea9955b138ceba3cc151d",
+      "metrics": {
+        "episodes": 64,
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "timeout_rate": 0.0,
+        "return_mean": 0.936553955078125,
+        "successful_steps_mean": 18.046875,
+        "stall_rate": 0.0,
+        "max_stationary_steps_mean": 3.484375,
+        "turn_fraction_mean": 0.3220100120547533,
+        "steps_mean": 18.046875
+      }
+    },
+    {
+      "candidate": "geometry-penalty-0",
+      "seed": 2,
+      "checkpoint": "artifacts/navigation-geometry/runs/geometry-penalty-0/seed-2.pt",
+      "checkpoint_sha256": "20f577cf277b16ea474cd036501e3cdb98d21f656c608fab52be7ce0470a8699",
+      "metrics": {
+        "episodes": 64,
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "timeout_rate": 0.0,
+        "return_mean": 0.936773681640625,
+        "successful_steps_mean": 17.984375,
+        "stall_rate": 0.0,
+        "max_stationary_steps_mean": 3.515625,
+        "turn_fraction_mean": 0.3187267749341759,
+        "steps_mean": 17.984375
+      }
+    },
+    {
+      "candidate": "geometry-penalty-0.005",
+      "seed": 0,
+      "checkpoint": "artifacts/navigation-geometry/runs/geometry-penalty-0.005/seed-0.pt",
+      "checkpoint_sha256": "0979510cc709783edd5e92fea68706bb9d53881884b0c6eee1eb01f35aa1f2f8",
+      "metrics": {
+        "episodes": 64,
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "timeout_rate": 0.0,
+        "return_mean": 0.9375427246093749,
+        "successful_steps_mean": 17.765625,
+        "stall_rate": 0.0,
+        "max_stationary_steps_mean": 3.4375,
+        "turn_fraction_mean": 0.3177973088461718,
+        "steps_mean": 17.765625
+      }
+    },
+    {
+      "candidate": "geometry-penalty-0.005",
+      "seed": 1,
+      "checkpoint": "artifacts/navigation-geometry/runs/geometry-penalty-0.005/seed-1.pt",
+      "checkpoint_sha256": "8356c407e752320bdf46e6e1b5bd5c64bf089015f75cd8500cc56b7173e47acf",
+      "metrics": {
+        "episodes": 64,
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "timeout_rate": 0.0,
+        "return_mean": 0.93748779296875,
+        "successful_steps_mean": 17.78125,
+        "stall_rate": 0.0,
+        "max_stationary_steps_mean": 3.515625,
+        "turn_fraction_mean": 0.3142866431357224,
+        "steps_mean": 17.78125
+      }
+    },
+    {
+      "candidate": "geometry-penalty-0.005",
+      "seed": 2,
+      "checkpoint": "artifacts/navigation-geometry/runs/geometry-penalty-0.005/seed-2.pt",
+      "checkpoint_sha256": "f3ca7a87a28a0139f9b2830d06f7f7c58bf4ffeb3dc02ab2530c3b1fc57d6de9",
+      "metrics": {
+        "episodes": 64,
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "timeout_rate": 0.0,
+        "return_mean": 0.936993408203125,
+        "successful_steps_mean": 17.921875,
+        "stall_rate": 0.0,
+        "max_stationary_steps_mean": 3.5,
+        "turn_fraction_mean": 0.3204080021499426,
+        "steps_mean": 17.921875
+      }
+    }
+  ],
+  "test_seeds": [
+    30000,
+    30001,
+    30002,
+    30003,
+    30004,
+    30005,
+    30006,
+    30007,
+    30008,
+    30009,
+    30010,
+    30011,
+    30012,
+    30013,
+    30014,
+    30015,
+    30016,
+    30017,
+    30018,
+    30019,
+    30020,
+    30021,
+    30022,
+    30023,
+    30024,
+    30025,
+    30026,
+    30027,
+    30028,
+    30029,
+    30030,
+    30031,
+    30032,
+    30033,
+    30034,
+    30035,
+    30036,
+    30037,
+    30038,
+    30039,
+    30040,
+    30041,
+    30042,
+    30043,
+    30044,
+    30045,
+    30046,
+    30047,
+    30048,
+    30049,
+    30050,
+    30051,
+    30052,
+    30053,
+    30054,
+    30055,
+    30056,
+    30057,
+    30058,
+    30059,
+    30060,
+    30061,
+    30062,
+    30063,
+    30064,
+    30065,
+    30066,
+    30067,
+    30068,
+    30069,
+    30070,
+    30071,
+    30072,
+    30073,
+    30074,
+    30075,
+    30076,
+    30077,
+    30078,
+    30079,
+    30080,
+    30081,
+    30082,
+    30083,
+    30084,
+    30085,
+    30086,
+    30087,
+    30088,
+    30089,
+    30090,
+    30091,
+    30092,
+    30093,
+    30094,
+    30095,
+    30096,
+    30097,
+    30098,
+    30099,
+    30100,
+    30101,
+    30102,
+    30103,
+    30104,
+    30105,
+    30106,
+    30107,
+    30108,
+    30109,
+    30110,
+    30111,
+    30112,
+    30113,
+    30114,
+    30115,
+    30116,
+    30117,
+    30118,
+    30119,
+    30120,
+    30121,
+    30122,
+    30123,
+    30124,
+    30125,
+    30126,
+    30127,
+    30128,
+    30129,
+    30130,
+    30131,
+    30132,
+    30133,
+    30134,
+    30135,
+    30136,
+    30137,
+    30138,
+    30139,
+    30140,
+    30141,
+    30142,
+    30143,
+    30144,
+    30145,
+    30146,
+    30147,
+    30148,
+    30149,
+    30150,
+    30151,
+    30152,
+    30153,
+    30154,
+    30155,
+    30156,
+    30157,
+    30158,
+    30159,
+    30160,
+    30161,
+    30162,
+    30163,
+    30164,
+    30165,
+    30166,
+    30167,
+    30168,
+    30169,
+    30170,
+    30171,
+    30172,
+    30173,
+    30174,
+    30175,
+    30176,
+    30177,
+    30178,
+    30179,
+    30180,
+    30181,
+    30182,
+    30183,
+    30184,
+    30185,
+    30186,
+    30187,
+    30188,
+    30189,
+    30190,
+    30191,
+    30192,
+    30193,
+    30194,
+    30195,
+    30196,
+    30197,
+    30198,
+    30199
+  ],
+  "test_runs": [
+    {
+      "candidate": "baseline",
+      "seed": 0,
+      "checkpoint": "artifacts/final/runs/mixed/cql/seed-0.pt",
+      "checkpoint_sha256": "c62008cb86e260ef1bcb12b5afe1a6326f6dd4914daa4c44ed2ad3f75a275c17",
+      "metrics": {
+        "episodes": 200,
+        "success_rate": 0.525,
+        "collision_rate": 0.135,
+        "timeout_rate": 0.34,
+        "return_mean": 0.266337890625,
+        "successful_steps_mean": 67.0,
+        "stall_rate": 0.805,
+        "max_stationary_steps_mean": 115.655,
+        "turn_fraction_mean": 0.8214495445291832,
+        "steps_mean": 132.025
+      }
+    },
+    {
+      "candidate": "baseline",
+      "seed": 1,
+      "checkpoint": "artifacts/final/runs/mixed/cql/seed-1.pt",
+      "checkpoint_sha256": "85521d4cd969a570d34cdc87df9da11828fb1f17ee107745dd9109dae2d6e1ab",
+      "metrics": {
+        "episodes": 200,
+        "success_rate": 0.555,
+        "collision_rate": 0.165,
+        "timeout_rate": 0.28,
+        "return_mean": 0.25594921875,
+        "successful_steps_mean": 68.70270270270271,
+        "stall_rate": 0.79,
+        "max_stationary_steps_mean": 106.67,
+        "turn_fraction_mean": 0.8104321801618426,
+        "steps_mean": 122.495
+      }
+    },
+    {
+      "candidate": "baseline",
+      "seed": 2,
+      "checkpoint": "artifacts/final/runs/mixed/cql/seed-2.pt",
+      "checkpoint_sha256": "b82dbea7f51ecff2e09c18b9b846fba8b6062e161ac2f101096b7d38aa912c38",
+      "metrics": {
+        "episodes": 200,
+        "success_rate": 0.465,
+        "collision_rate": 0.115,
+        "timeout_rate": 0.42,
+        "return_mean": 0.246201171875,
+        "successful_steps_mean": 63.494623655913976,
+        "stall_rate": 0.805,
+        "max_stationary_steps_mean": 127.155,
+        "turn_fraction_mean": 0.8363165116485715,
+        "steps_mean": 143.84
+      }
+    },
+    {
+      "candidate": "geometry-penalty-0.005",
+      "seed": 0,
+      "checkpoint": "artifacts/navigation-geometry/runs/geometry-penalty-0.005/seed-0.pt",
+      "checkpoint_sha256": "0979510cc709783edd5e92fea68706bb9d53881884b0c6eee1eb01f35aa1f2f8",
+      "metrics": {
+        "episodes": 200,
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "timeout_rate": 0.0,
+        "return_mean": 0.9413593750000001,
+        "successful_steps_mean": 16.68,
+        "stall_rate": 0.0,
+        "max_stationary_steps_mean": 3.28,
+        "turn_fraction_mean": 0.28724255805883525,
+        "steps_mean": 16.68
+      }
+    },
+    {
+      "candidate": "geometry-penalty-0.005",
+      "seed": 1,
+      "checkpoint": "artifacts/navigation-geometry/runs/geometry-penalty-0.005/seed-1.pt",
+      "checkpoint_sha256": "8356c407e752320bdf46e6e1b5bd5c64bf089015f75cd8500cc56b7173e47acf",
+      "metrics": {
+        "episodes": 200,
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "timeout_rate": 0.0,
+        "return_mean": 0.9407968750000001,
+        "successful_steps_mean": 16.84,
+        "stall_rate": 0.0,
+        "max_stationary_steps_mean": 3.35,
+        "turn_fraction_mean": 0.2963789048571307,
+        "steps_mean": 16.84
+      }
+    },
+    {
+      "candidate": "geometry-penalty-0.005",
+      "seed": 2,
+      "checkpoint": "artifacts/navigation-geometry/runs/geometry-penalty-0.005/seed-2.pt",
+      "checkpoint_sha256": "f3ca7a87a28a0139f9b2830d06f7f7c58bf4ffeb3dc02ab2530c3b1fc57d6de9",
+      "metrics": {
+        "episodes": 200,
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "timeout_rate": 0.0,
+        "return_mean": 0.94195703125,
+        "successful_steps_mean": 16.51,
+        "stall_rate": 0.0,
+        "max_stationary_steps_mean": 3.135,
+        "turn_fraction_mean": 0.2812813432210038,
+        "steps_mean": 16.51
+      }
+    }
+  ],
+  "test_aggregate": [
+    {
+      "candidate": "baseline",
+      "training_seeds": [
+        0,
+        1,
+        2
+      ],
+      "n": 3,
+      "success_rate": {
+        "mean": 0.515,
+        "std": 0.04582575694955841,
+        "valid_seeds": 3
+      },
+      "collision_rate": {
+        "mean": 0.13833333333333334,
+        "std": 0.025166114784235832,
+        "valid_seeds": 3
+      },
+      "timeout_rate": {
+        "mean": 0.3466666666666667,
+        "std": 0.0702376916856849,
+        "valid_seeds": 3
+      },
+      "return_mean": {
+        "mean": 0.2561627604166667,
+        "std": 0.010070057623305963,
+        "valid_seeds": 3
+      },
+      "successful_steps_mean": {
+        "mean": 66.39910878620556,
+        "std": 2.6555271656511956,
+        "valid_seeds": 3
+      },
+      "stall_rate": {
+        "mean": 0.8000000000000002,
+        "std": 0.008660254037844393,
+        "valid_seeds": 3
+      },
+      "max_stationary_steps_mean": {
+        "mean": 116.49333333333334,
+        "std": 10.268198884582112,
+        "valid_seeds": 3
+      },
+      "turn_fraction_mean": {
+        "mean": 0.8227327454465324,
+        "std": 0.012989788588519454,
+        "valid_seeds": 3
+      },
+      "steps_mean": {
+        "mean": 132.78666666666666,
+        "std": 10.692864832837518,
+        "valid_seeds": 3
+      }
+    },
+    {
+      "candidate": "geometry-penalty-0.005",
+      "training_seeds": [
+        0,
+        1,
+        2
+      ],
+      "n": 3,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0,
+        "valid_seeds": 3
+      },
+      "collision_rate": {
+        "mean": 0.0,
+        "std": 0.0,
+        "valid_seeds": 3
+      },
+      "timeout_rate": {
+        "mean": 0.0,
+        "std": 0.0,
+        "valid_seeds": 3
+      },
+      "return_mean": {
+        "mean": 0.94137109375,
+        "std": 0.0005801668966164956,
+        "valid_seeds": 3
+      },
+      "successful_steps_mean": {
+        "mean": 16.676666666666666,
+        "std": 0.16502525059315332,
+        "valid_seeds": 3
+      },
+      "stall_rate": {
+        "mean": 0.0,
+        "std": 0.0,
+        "valid_seeds": 3
+      },
+      "max_stationary_steps_mean": {
+        "mean": 3.2550000000000003,
+        "std": 0.10965856099730667,
+        "valid_seeds": 3
+      },
+      "turn_fraction_mean": {
+        "mean": 0.2883009353789899,
+        "std": 0.007604223415512336,
+        "valid_seeds": 3
+      },
+      "steps_mean": {
+        "mean": 16.676666666666666,
+        "std": 0.16502525059315332,
+        "valid_seeds": 3
+      }
+    }
+  ],
+  "session_seconds": 3.271331547992304,
+  "provenance": {
+    "python": "3.12.15",
+    "platform": "Linux-7.3.4-arch1-2-x86_64-with-glibc2.44",
+    "device": "cpu",
+    "threads_per_training_worker": 1,
+    "packages": {
+      "torch": "2.14.1",
+      "gymnasium": "1.4.0",
+      "minigrid": "3.2.0",
+      "stable-baselines3": "2.9.0",
+      "numpy": "2.5.4",
+      "matplotlib": "3.11.2",
+      "imageio-ffmpeg": "0.6.0",
+      "pillow": "12.3.0"
+    },
+    "base_git_revision": "cd34852891d58d2f405e6938d4d697e90d1c60df",
+    "git_status": "dirty",
+    "git_unavailable_reason": null,
+    "source_sha256": {
+      "src/cql_minigrid/__init__.py": "7bfa1e1a854e02e24326da96ceeb241d74011f579e88c4aece3d70d011910f21",
+      "src/cql_minigrid/__main__.py": "3129adff95e0f38b87ab34cddfc27082c7892bcaec267ff5d40f160fdf55b44a",
+      "src/cql_minigrid/ablation.py": "bbabfb3b5d2f065ab3dcfd6d5f829d332f687131983496fc6f9d8acb791b3f54",
+      "src/cql_minigrid/cli.py": "d4feebdf8d10ce019586499542ed2fd5853aea1a45c8417ee921070d85d10fc5",
+      "src/cql_minigrid/collector.py": "d1dbb1aeffa47fd19a5de17976308b55dc37a96065b3ec03b2a5121bdafed509",
+      "src/cql_minigrid/common.py": "373f768688fd505605b3f0670724e1129a0848944cf84a43b3fab2d30335d8b4",
+      "src/cql_minigrid/data.py": "524a16eab5ef8f5a32baa15fffbc52acbc05e6c15fec1ac2eee0889eb6a89687",
+      "src/cql_minigrid/env.py": "07868af41fc22d80926f63825f0ea4a4a4de63bcc1af637e369365d4c43dc0d7",
+      "src/cql_minigrid/evaluation.py": "6ef0c6d92900c41b6fb1ae5d9c9cc40cc73e92b65263d316235aed691095b67a",
+      "src/cql_minigrid/experiments.py": "a2925d0cfb015cfca290334860585330ba114334f391ced09c7a4d1c8592b5fa",
+      "src/cql_minigrid/guided.py": "31fad47aeee1499868dfeef494827c6ab94e97d35a61c9ac167bae25c47568b2",
+      "src/cql_minigrid/improvement.py": "46bdae7d4743e803dbe7f5e76eddedb5a7b1585ebb17d697f799ae0f22911da4",
+      "src/cql_minigrid/offline.py": "9fc8624b7c0a52b08cb26560ef374f68533262fefc8ced70cda9fcb84542f265",
+      "src/cql_minigrid/reporting.py": "bc9786ce9328786430e40cd1cb54e9158f3a2be1b3cf5ef8a70b9c6c6d01d7be",
+      "src/cql_minigrid/rollout.py": "88de9380e7ad46fd3194e809a3604e7e0023fc1fbe90b7bc5bfe19100336f7f8",
+      "src/cql_minigrid/shaping.py": "a9d2e5f70bf7ea55c7dc7012de88a660bebce7a6b2f1a6875d551fccbdcb8ff1"
+    }
+  },
+  "training_source_sha256": {
+    "src/cql_minigrid/__init__.py": "7bfa1e1a854e02e24326da96ceeb241d74011f579e88c4aece3d70d011910f21",
+    "src/cql_minigrid/__main__.py": "3129adff95e0f38b87ab34cddfc27082c7892bcaec267ff5d40f160fdf55b44a",
+    "src/cql_minigrid/ablation.py": "bbabfb3b5d2f065ab3dcfd6d5f829d332f687131983496fc6f9d8acb791b3f54",
+    "src/cql_minigrid/cli.py": "d4feebdf8d10ce019586499542ed2fd5853aea1a45c8417ee921070d85d10fc5",
+    "src/cql_minigrid/collector.py": "d1dbb1aeffa47fd19a5de17976308b55dc37a96065b3ec03b2a5121bdafed509",
+    "src/cql_minigrid/common.py": "373f768688fd505605b3f0670724e1129a0848944cf84a43b3fab2d30335d8b4",
+    "src/cql_minigrid/data.py": "524a16eab5ef8f5a32baa15fffbc52acbc05e6c15fec1ac2eee0889eb6a89687",
+    "src/cql_minigrid/env.py": "07868af41fc22d80926f63825f0ea4a4a4de63bcc1af637e369365d4c43dc0d7",
+    "src/cql_minigrid/evaluation.py": "6ef0c6d92900c41b6fb1ae5d9c9cc40cc73e92b65263d316235aed691095b67a",
+    "src/cql_minigrid/experiments.py": "a2925d0cfb015cfca290334860585330ba114334f391ced09c7a4d1c8592b5fa",
+    "src/cql_minigrid/guided.py": "31fad47aeee1499868dfeef494827c6ab94e97d35a61c9ac167bae25c47568b2",
+    "src/cql_minigrid/improvement.py": "2b458840c4b9eb19b461dd9ff856edd3121609c28e5a78bdfe5732883a068fb1",
+    "src/cql_minigrid/offline.py": "9fc8624b7c0a52b08cb26560ef374f68533262fefc8ced70cda9fcb84542f265",
+    "src/cql_minigrid/reporting.py": "3795271c2d4fb30568bbac26e5b903704c3f2aaf93fdecc7d6246c013f543dd1",
+    "src/cql_minigrid/rollout.py": "88de9380e7ad46fd3194e809a3604e7e0023fc1fbe90b7bc5bfe19100336f7f8",
+    "src/cql_minigrid/shaping.py": "a9d2e5f70bf7ea55c7dc7012de88a660bebce7a6b2f1a6875d551fccbdcb8ff1"
+  }
+}
