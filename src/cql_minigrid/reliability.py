@@ -70,6 +70,7 @@ def check_seeds(test, seeds, metadata):
     reserved |= set(range(30000, 30200)) | set(range(12, 20))
     for meta in metadata.values():
         reserved |= {e['seed'] for e in meta['episode_records']}
+        reserved |= {e['policy_seed'] for e in meta['episode_records'] if 'policy_seed' in e}
         reserved |= {meta['policy_seed_start']}
     if len(test) != 200 or len(set(test)) != 200 or reserved & set(test):
         raise ValueError('Fresh navigation test seeds overlap a reserved range')
@@ -131,6 +132,10 @@ def report(study, runs, keys, reports):
 def run(root, reports, archive=None):
     started=time.perf_counter()
     root, reports=Path(root),Path(reports)
+    previous=read(root/'complete.json') if (root/'complete.json').exists() else {}
+    previous_seconds=previous.get('total_execution_seconds',previous.get('session_seconds',0))
+    if (root/'session_timing.json').exists():
+        previous_seconds=max(previous_seconds,read(root/'session_timing.json')['completed_session_seconds'])
     seed_everything(0)
     config=read('configs/main.json')['offline']
     seeds=read('configs/seeds.json');seeds['offline_training']=SEEDS
@@ -141,7 +146,10 @@ def run(root, reports, archive=None):
     metadata={name:read(p.with_suffix('.json')) for name,p in datasets.items()}
     for name,p in datasets.items():
         if sha256(p)!=metadata[name]['sha256']:raise ValueError('Frozen dataset changed: '+name)
-    test=list(range(40000,40200));check_seeds(test,seeds,metadata)
+    protocol=read('configs/reliability.json')
+    if protocol['training_seeds']!=SEEDS:raise ValueError('This study requires training seeds 0–9')
+    fresh=protocol['fresh_navigation_test']
+    test=list(range(fresh['start'],fresh['start']+fresh['episodes']));check_seeds(test,seeds,metadata)
     source=provenance()
     identity={'training_seeds':SEEDS,'validation':seeds['validation'],'evaluation':seeds['evaluation'],
               'fresh_navigation_test':test,'dataset_hashes':{n:m['sha256'] for n,m in metadata.items()},
@@ -160,6 +168,8 @@ def run(root, reports, archive=None):
     baseline=[]; ablation=[]; navigation=[]
     def checkpoint(path, dataset, method, seed, cfg, initial=None):
         path=Path(path)
+        if str(path) in inventory and path.exists() and sha256(path)!=inventory[str(path)]['sha256']:
+            raise ValueError('Completed checkpoint checksum mismatch: '+str(path))
         if str(path) in expected and path.exists() and sha256(path)!=expected[str(path)]:
             raise ValueError('Historical checkpoint changed: '+str(path))
         wanted={'method':method,'seed':seed,'config':cfg,'dataset_sha256':metadata[dataset]['sha256']}
@@ -171,16 +181,22 @@ def run(root, reports, archive=None):
             done=saved['updates']==cfg['updates'];del saved
         if not done:
             train_offline(datasets[dataset],path,cfg,method=method,seed=seed,resume=existed,initialize_from=initial)
-        inventory[str(path)]={'checkpoint':str(path),'sha256':sha256(path),'reused':done,
+        inventory[str(path)]={'checkpoint':str(path),'sha256':sha256(path),'reused':not inventory.get(str(path),{}).get('newly_trained',not done),
                               'method':method,'seed':seed,'dataset':dataset,
                               'newly_trained':inventory.get(str(path),{}).get('newly_trained',not done)}
         write_json(root/'checkpoint_inventory.json',list(inventory.values()))
         return path
+    evaluation_cache={}
     def evaluation(path, policy_method, env_seeds, output, **labels):
         output=Path(output);old=read(output) if output.exists() else None
         if not (old and old.get('checkpoint_sha256')==sha256(path) and old.get('seeds')==env_seeds
                 and old.get('evaluation_version')==EVALUATION_VERSION):
-            old=evaluate(policy_method,path,env_seeds,output)
+            key=(sha256(path),policy_method,tuple(env_seeds))
+            if key in evaluation_cache:
+                old=evaluation_cache[key];write_json(output,old)
+            else:
+                old=evaluate(policy_method,path,env_seeds,output)
+        evaluation_cache[sha256(path),policy_method,tuple(env_seeds)]=old
         metrics=summarize(old['episodes'])
         if metrics!=old['summary']:raise ValueError('Evaluation aggregate mismatch')
         stationary=[e['max_stationary_steps'] for e in old['episodes']]
@@ -268,6 +284,7 @@ def run(root, reports, archive=None):
              'selected':selected['candidate'],'unique_checkpoints':len(inventory),
              'newly_trained_models':sum(r['newly_trained'] for r in inventory.values()),
              'reused_models':sum(not r['newly_trained'] for r in inventory.values()),
+             'total_execution_seconds':previous_seconds+time.perf_counter()-started,
              'session_seconds':time.perf_counter()-started,'provenance':source,'identity':identity}
     write_json(root/'complete.json',summary);write_json(reports/'complete.json',summary)
     print(json.dumps(summary),flush=True)

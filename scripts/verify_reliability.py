@@ -35,6 +35,9 @@ def verify(project):
             assert run['metrics']['max_stationary_steps_median']==np.median(stationary)
             assert all(k in run['metrics'] for k in METRICS)
             total+=len(seeds)
+    historical=json.loads((project/'artifacts/reliability/historical_hashes.json').read_text())
+    for name,expected in historical.items():
+        assert sha256(project/name)==expected,('Historical artifact changed',name)
     identity=json.loads((project/'artifacts/reliability/identity.json').read_text())
     files={'strong':'artifacts/final/datasets/strong.npz','mixed':'artifacts/final/datasets/mixed.npz',
            'mixed_balanced':'artifacts/ablation/datasets/mixed_balanced.npz','guided':'artifacts/navigation-guided/datasets/guided.npz'}
