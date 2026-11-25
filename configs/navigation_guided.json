@@ -1,0 +1,89 @@
+{
+  "seeds_file": "configs/seeds.json",
+  "ppo": {
+    "seed": 12,
+    "total_timesteps": 400000,
+    "early_timesteps": 10000,
+    "checkpoint_interval": 32768,
+    "n_envs": 8,
+    "n_steps": 256,
+    "batch_size": 256,
+    "n_epochs": 4,
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "ent_coef": 0.03,
+    "shaping_scale": 0.2,
+    "step_cost": 0.005
+  },
+  "datasets": {
+    "transitions": 200000,
+    "minimum_collector_success": 0.6,
+    "mixtures": {
+      "strong": {
+        "strong": 1.0
+      },
+      "mixed": {
+        "strong": 0.5,
+        "early": 0.25,
+        "random": 0.25
+      }
+    }
+  },
+  "offline": {
+    "hidden": [
+      128,
+      128
+    ],
+    "updates": 5000,
+    "batch_size": 256,
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "bootstrap_on_truncation": false,
+    "target_interval": 250,
+    "checkpoint_interval": 1000,
+    "log_interval": 100,
+    "alpha": 1.0
+  },
+  "improvement": {
+    "baseline": "artifacts/final/runs/mixed/cql/seed-{seed}.pt",
+    "test_seed_start": 30000,
+    "test_episodes": 200,
+    "demo_seed": 20000,
+    "quality_tolerances": {
+      "success_tolerance": 0.0,
+      "collision_tolerance": 0.02,
+      "minimum_success": 0.95
+    },
+    "candidates": [
+      {
+        "name": "guided-penalty-0",
+        "dataset": "artifacts/navigation-guided/datasets/guided.npz",
+        "initialize_from": "artifacts/final/runs/mixed/cql/seed-{seed}.pt",
+        "offline": {
+          "step_penalty": 0.0
+        }
+      },
+      {
+        "name": "guided-penalty-0.002",
+        "dataset": "artifacts/navigation-guided/datasets/guided.npz",
+        "initialize_from": "artifacts/final/runs/mixed/cql/seed-{seed}.pt",
+        "offline": {
+          "step_penalty": 0.002
+        }
+      },
+      {
+        "name": "guided-penalty-0.005",
+        "dataset": "artifacts/navigation-guided/datasets/guided.npz",
+        "initialize_from": "artifacts/final/runs/mixed/cql/seed-{seed}.pt",
+        "offline": {
+          "step_penalty": 0.005
+        }
+      }
+    ]
+  },
+  "guided": {
+    "transitions": 50000,
+    "episode_seed_start": 1300000,
+    "policy_seed_start": 300120
+  }
+}

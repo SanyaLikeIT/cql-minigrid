@@ -24,6 +24,28 @@ jobs:
       - run: python -m cql_minigrid doctor
       - run: python -m cql_minigrid env-smoke
       - run: python -m cql_minigrid pipeline --config configs/smoke.json --root artifacts/ci --reports artifacts/ci/reports
+      - name: Smoke-test guided navigation fine-tuning
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          config = json.loads(Path('configs/smoke.json').read_text())
+          config['offline']['navigation_features'] = True
+          config['guided'] = {'transitions': 128, 'episode_seed_start': 1300000,
+                              'policy_seed_start': 300120}
+          config['improvement'] = {
+              'baseline': 'artifacts/ci/runs/strong/cql/seed-{seed}.pt',
+              'test_seed_start': 30000, 'test_episodes': 2,
+              'candidates': [{'name': 'geometry',
+                              'dataset': 'artifacts/ci-navigation/datasets/guided.npz',
+                              'initialize_from': 'artifacts/ci/runs/strong/cql/seed-{seed}.pt',
+                              'offline': {'step_penalty': 0.005}}],
+          }
+          Path('artifacts/ci-navigation').mkdir(exist_ok=True)
+          Path('artifacts/ci-navigation/config.json').write_text(json.dumps(config))
+          PY
+          python -m cql_minigrid guided-data --config artifacts/ci-navigation/config.json --root artifacts/ci-navigation
+          python -m cql_minigrid improve --config artifacts/ci-navigation/config.json --root artifacts/ci-navigation
       - name: Run the small alpha study
         run: |
           python - <<'PY'

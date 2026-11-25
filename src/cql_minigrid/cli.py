@@ -7,7 +7,7 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description="Team 12 offline MiniGrid experiments")
-    parser.add_argument("command", choices=["doctor", "env-smoke", "ppo", "collect", "train", "evaluate", "replay", "experiments", "pipeline", "ablation"])
+    parser.add_argument("command", choices=["doctor", "env-smoke", "ppo", "collect", "train", "evaluate", "replay", "experiments", "pipeline", "ablation", "improve", "guided-data"])
     parser.add_argument("--config", default="configs/main.json")
     parser.add_argument("--root", default="artifacts/final")
     parser.add_argument("--resume", action="store_true")
@@ -17,6 +17,8 @@ def main():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output")
     parser.add_argument("--checkpoint")
+    parser.add_argument("--initialize-from", help="Initialize new offline training from saved model weights")
+    parser.add_argument("--finalize", action="store_true", help="Lock validation selection and evaluate fresh test seeds")
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--reports")
     parser.add_argument("--format", choices=["gif", "mp4"])
@@ -64,7 +66,8 @@ def main():
         config = json.loads(config_path.read_text())
         dataset = Path(args.dataset) if args.dataset else Path(args.root) / "datasets/strong.npz"
         output = Path(args.output) if args.output else Path(args.root) / "runs" / dataset.stem / args.method / f"seed-{args.seed}.pt"
-        train_offline(dataset, output, config["offline"], method=args.method, seed=args.seed, resume=args.resume)
+        train_offline(dataset, output, config["offline"], method=args.method, seed=args.seed,
+                      resume=args.resume, initialize_from=args.initialize_from)
     elif args.command in ["evaluate", "replay"]:
         from .evaluation import evaluate, export_replay, load_policy
         from .common import seed_everything, sha256, write_json
@@ -90,6 +93,20 @@ def main():
             path = Path(output)
             write_json(path.with_suffix(path.suffix + '.json'), replay)
             print(json.dumps(replay, indent=2))
+    elif args.command == 'guided-data':
+        from .guided import collect_guided
+        config = json.loads(config_path.read_text())
+        result = collect_guided(config, args.root, config_path=config_path)
+        print(json.dumps({'transitions': result['transitions'], 'episodes': result['episodes']}, indent=2))
+    elif args.command == 'improve':
+        from .improvement import run_improvement
+        config = json.loads(config_path.read_text())
+        if args.workers != 1:
+            parser.error('improve uses one CPU worker')
+        result = run_improvement(config, args.root, reports=args.reports,
+                                 config_path=config_path, finalize=args.finalize)
+        print(json.dumps({'selection': result['selection']['candidate'],
+                          'seconds': result['session_seconds']}, indent=2))
     elif args.command == 'ablation':
         from .ablation import run_ablation
         config = json.loads(config_path.read_text())
