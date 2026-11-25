@@ -87,7 +87,9 @@ counterpart takes 148 actions and has a stationary run of 125.
 [aggregate/per-run results](../reports/navigation/summary.json),
 [negative controls](../reports/navigation/controls/), and
 [audit](../reports/navigation/integrity.json) retain the measured evidence.
-Full episode records and model weights remain under `artifacts/`.
+Full final-test episode records and the reported final checkpoints remain under
+`artifacts/`. Intermediate control weights are excluded from the final
+distribution; their compact results remain in `reports/navigation/controls/`.
 
 These results cover one environment size, one guided dataset, three model
 initializations, and 200 distinct fresh environment seeds. They do not establish
@@ -117,7 +119,9 @@ completed run. Configuration, data, initialization, and numerical training or
 evaluation source changes are rejected. Reporting/orchestration fixes may resume
 with their current hashes recorded separately from the original training sources.
 
-Controls use `configs/navigation.json` with root `artifacts/navigation-penalty`,
-or `configs/navigation_guided.json` with root `artifacts/navigation-guided`.
-Both run `improve` without `--finalize`; the rejected guided control leaves its
-test set unopened. Historical source fingerprints are retained in these reports.
+The exploratory controls are defined by `configs/navigation.json` and
+`configs/navigation_guided.json`. Their frozen summaries remain in
+`reports/navigation/controls/`; intermediate weight dumps are not distributed.
+Reproduce a control with `improve` and a fresh output root, without `--finalize`.
+The rejected guided control leaves its test set unopened. Historical source
+fingerprints are retained in these reports.
