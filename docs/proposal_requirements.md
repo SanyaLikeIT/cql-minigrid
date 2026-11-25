@@ -16,11 +16,10 @@ The slides define project requirements; code and reports below implement them.
 `elapsed_steps` is the integer environment counter, starting at zero and
 reaching 256 at the time limit. Its named observation component is encoded
 as `elapsed_steps / 256` at index 836 of the shared float32 vector. This is
-the same numerical encoding used by the existing PPO and pilot datasets.
+the same numerical encoding used by the PPO collector datasets.
 The raw integer counter is also exposed in reset/step info.
 
-Final datasets target approximately 200,000 transitions each. Existing
-50,000-transition datasets and their measurements are retained as a pilot.
-The separate small CPU pilot remains available through `configs/smoke.json`.
+Final datasets target approximately 200,000 transitions each.
+A small CPU validation configuration is available through `configs/smoke.json`.
 Slide 8 requests gameplay videos; MP4 is the requested delivery format.
 GIF demonstrations supplement the MP4 exports.

@@ -40,7 +40,7 @@ runs** provide a baseline on the new mixed file. `alpha=0` is the DQN control:
 the loss, optimization, model initialization, targets, and sampling are
 identical. Tests compare entire trained parameter tensors, in addition to
 the existing loss/gradient equivalence checks. All final offline policies
-in this study are trained afresh. Original data and the 50k pilot remain intact.
+in this study are trained afresh. Original proposal datasets remain intact.
 
 The comparison keeps one PPO collector training seed and one frozen file per
 condition. Changing the mixture also changes coverage, outcome frequencies,
@@ -53,7 +53,7 @@ exclude runs without successes; each aggregate records `valid_seeds`.
 ## Reproduce
 
 First run the proposal pipeline from the repository root, or use its existing
-artifacts from the project ZIP. Then reuse its exact PPO checkpoints:
+artifacts included in the final distribution. Then reuse its exact PPO checkpoints:
 
 ```sh
 mkdir -p artifacts/ablation
