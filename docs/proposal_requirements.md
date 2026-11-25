@@ -9,7 +9,7 @@ The slides define project requirements; code and reports below implement them.
 | 4 | MiniGrid-Dynamic-Obstacles-8x8-v0; left, right, forward; full symbolic grid, direction, elapsed time | `env.py`, `configs/observation.json`, Issue #2 |
 | 5 | Goal reward `1 - 0.9 * steps / 256`; collision reward -1, including walls; ordinary reward 0; timeout at 256 steps | `env.py`, exact reward/ending tests in `tests/test_env.py`, Issue #2 |
 | 6 | PPO checkpoints; stronger-only and stronger/early/random datasets; approximately 200,000 transitions per final file | `collector.py`, `configs/main.json`, Issue #3 |
-| 7 | Matched DQN/CQL, BC, three training seeds, reserved common test seeds, collector PPO reference | `offline.py`, `experiments.py`, Issues #4–#8 |
+| 7 | Matched DQN/CQL, BC, ten training seeds (three in the historical proposal run), reserved common test seeds, collector PPO reference | `offline.py`, `experiments.py`, Issues #4–#8 |
 | 7 | Success/collision/timeout rates, mean return, mean steps on successful episodes | `rollout.py`, `reporting.py`, Issues #7–#8 |
 | 8 | Frozen data, plots, gameplay videos | NPZ/JSON metadata, reports, MP4/GIF replay export, Issues #3, #7–#8 |
 

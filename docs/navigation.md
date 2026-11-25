@@ -1,5 +1,8 @@
 # Efficient CQL navigation
 
+This document records the historical three-seed study. The current ten-seed
+extension is documented in [reliability.md](reliability.md).
+
 The original mixed CQL demonstration reaches the goal in 148 actions, including
 125 consecutive turns in one cell. This follow-up improves the learned policy
 while preserving the original environment, rewards, datasets, and reports.

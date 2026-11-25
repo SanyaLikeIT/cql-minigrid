@@ -29,7 +29,25 @@ adds 50 geometry features derived from the existing observation, 50,012 guided
 transitions, and a 0.005 training step cost. The deployed policy chooses a
 network action directly; it does not call the demonstration planner.
 
-## Results
+## Current ten-seed reliability study
+
+The current protocol uses training seeds 0–9 and preserves the original frozen
+datasets and hyperparameters. Run the resumable extension from the project root:
+
+```sh
+.venv/bin/python -m cql_minigrid.reliability
+.venv/bin/python scripts/render_reliability.py
+.venv/bin/python scripts/verify_reliability.py
+```
+
+Current reports are under `reports/reliability/`, checkpoints and progress under
+`artifacts/reliability/`. The [reliability protocol](docs/reliability.md) explains
+checkpoint reuse, model-level confidence intervals, paired comparisons, and the
+new navigation test seeds 40000–40199. Historical three-seed results below remain
+unchanged. Do not resume a frozen three-seed matrix with an expanded seed list;
+the extension runner imports compatible checkpoints into a separate study.
+
+## Historical three-seed results
 
 The original comparison uses three training seeds and 100 common test episodes
 per run. Values are mean ± sample SD across training seeds; they are not

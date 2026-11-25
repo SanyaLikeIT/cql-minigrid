@@ -1,5 +1,8 @@
 # Transition-balanced mixed data and alpha study
 
+This document records the historical three-seed study. The current ten-seed
+extension is documented in [reliability.md](reliability.md).
+
 This follow-up retains the original proposal experiment and adds a stronger
 control over the amount of weak data. It uses the same observation/reward
 rules, PPO sources, 5,000-update offline budget, seeds 0/1/2, and test seeds
