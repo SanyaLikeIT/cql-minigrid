@@ -1,0 +1,37 @@
+OpenSans-Regular.ttf
+Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)
+
+OpenSans-Regular.ttf
+This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL
+
+OpenSans-Regular.ttf
+http://scripts.sil.org/OFL
+
+OpenSans-Bold.ttf
+Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)
+
+OpenSans-Bold.ttf
+This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL
+
+OpenSans-Bold.ttf
+http://scripts.sil.org/OFL
+
+LiberationSerif-Regular.ttf
+Digitized data copyright (c) 2010 Google Corporation.
+Copyright (c) 2012 Red Hat, Inc.
+
+LiberationSerif-Regular.ttf
+Licensed under the SIL Open Font License, Version 1.1
+
+LiberationSerif-Regular.ttf
+http://scripts.sil.org/OFL
+
+LiberationSerif-Bold.ttf
+Digitized data copyright (c) 2010 Google Corporation.
+Copyright (c) 2012 Red Hat, Inc.
+
+LiberationSerif-Bold.ttf
+Licensed under the SIL Open Font License, Version 1.1
+
+LiberationSerif-Bold.ttf
+http://scripts.sil.org/OFL
